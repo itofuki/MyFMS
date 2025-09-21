@@ -48,7 +48,6 @@ export default function MyPage() {
         
         <div className="mb-8 p-4 bg-black/30 rounded-lg">
           <p className="text-gray-400">あなたのメールアドレス:</p>
-          {/* 5. stateからユーザーのメールアドレスを表示 */}
           <p className="text-cyan-300 text-xl">{user.email}</p>
         </div>
 

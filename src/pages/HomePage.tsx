@@ -1,21 +1,20 @@
 /* src/pages/HomePage.tsx */
 
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { loadSlim } from "tsparticles-slim"; // または loadFull
 import type { Container, Engine } from "tsparticles-engine";
 import Particles from "react-tsparticles"; // React用のtsParticlesラッパー
 import { Link } from "react-router-dom";
 
 export default function HomePage() {
-  // tsParticlesのエンジンを初期化するためのコールバック
   const particlesInit = useCallback(async (engine: Engine) => {
-    // スリム版のtsParticlesを読み込み。必要な機能だけをバンドルするので軽量
-    await loadSlim(engine); 
+    await loadSlim(engine);
   }, []);
 
-  // tsParticlesのコンテナがロードされたときのコールバック (オプション)
-  const particlesLoaded = useCallback(async (container: Container | undefined) => {
-    // console.log("Particles container loaded", container);
+  // 👇 この関数を追加します
+  const particlesLoaded = useCallback(async (_container: Container | undefined) => {
+    // パーティクルがロードされた後に実行する処理があればここに書く
+    // console.log("Particles container loaded");
   }, []);
 
   return (

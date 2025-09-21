@@ -17,11 +17,11 @@ const linkStyle: React.CSSProperties = {
 export default function Layout() {
   return (
     <div>
-      {/*<header style={headerStyle}>
+      <header style={headerStyle}>
         <Link to="/" style={linkStyle}>
           FMS
         </Link>
-      </header>*/}
+      </header>
       
       <main>
         {/* Page content will be rendered here */}
