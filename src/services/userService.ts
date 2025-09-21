@@ -1,4 +1,5 @@
-// src/services/todoService.ts
+/* src/services/todoService.ts */
+
 import { supabase } from '../lib/supabaseClient'
 
 export const fetchTodos = async () => {
