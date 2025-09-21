@@ -1,9 +1,9 @@
 /* src/pages/HomePage.tsx */
 
 import { useCallback } from "react";
-import { loadSlim } from "tsparticles-slim"; // または loadFull
+import { loadSlim } from "tsparticles-slim";
 import type { Container, Engine } from "tsparticles-engine";
-import Particles from "react-tsparticles"; // React用のtsParticlesラッパー
+import Particles from "react-tsparticles";
 import { Link } from "react-router-dom";
 
 export default function HomePage() {
@@ -11,7 +11,6 @@ export default function HomePage() {
     await loadSlim(engine);
   }, []);
 
-  // 👇 この関数を追加します
   const particlesLoaded = useCallback(async (_container: Container | undefined) => {
     // パーティクルがロードされた後に実行する処理があればここに書く
     // console.log("Particles container loaded");
@@ -105,12 +104,10 @@ export default function HomePage() {
           FMS
         </h1>
         <p className="text-xl md:text-2xl text-gray-200 font-light leading-relaxed max-w-2xl mx-auto opacity-90">
-          IPUT生向けの学習プラットフォーム。データを視覚化し、よりスマートな学習環境を支援します。
+          IPUT生向けの学習プラットフォーム。データを集約し、よりスマートな学習環境を支援します。
         </p>
         
-        {/* 例えば、ボタンを追加する場合 */}
         <div className="mt-8 flex justify-center space-x-4">
-          {/* 👇 2. <button> を <Link> に変更 */}
           <Link 
             to="/login" 
             className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-full shadow-lg hover:shadow-cyan-400/50 hover:scale-105 transition-all duration-300"

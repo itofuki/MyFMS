@@ -6,6 +6,7 @@ import HomePage from "./pages/HomePage";
 import LoginForm from './pages/LoginForm';
 import RegisterForm from './pages/RegisterForm';
 import MyPage from "./pages/MyPage";
+import Setting from "./pages/Setting";
 
 const router = createBrowserRouter([
   {
@@ -14,7 +15,7 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />, // 👈 2. ルートパスにHomePageを設定
+        element: <HomePage />,
       },
       {
         path: "login",
@@ -25,8 +26,12 @@ const router = createBrowserRouter([
         element: <RegisterForm />,
       },
       {
-        path: "mypage", // 👈 3. 新しいルートを追加
+        path: "mypage",
         element: <MyPage />,
+      },
+      {
+        path: "/setting", // 新しいページのパス
+        element: <Setting />, // 新しいページコンポーネント
       },
     ]
   },

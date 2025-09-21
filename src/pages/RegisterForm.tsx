@@ -81,7 +81,6 @@ export default function RegisterForm() {
         {/* Login link */}
         <p className="text-center mt-6 text-sm text-gray-400">
           Already have an account?{" "}
-          {/* <a>タグを<Link>に変更し、hrefをtoに変更 */}
           <Link to="/login" className="text-cyan-400 hover:underline">
             Login here
           </Link>
