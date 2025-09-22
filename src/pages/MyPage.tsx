@@ -6,6 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { useScheduledReloader } from "../hooks/useScheduledReloader";
 import RotatingCarousel from '../components/RotatingCarousel';
+import { FiSettings } from "react-icons/fi";
 
 export default function MyPage() {
   const photoItems = [
@@ -34,7 +35,6 @@ export default function MyPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        // DBから現在のコースを取得して表示する
         const { data: profiles } = await supabase
           .from("profiles")
           .select("course")
@@ -50,11 +50,6 @@ export default function MyPage() {
     fetchUserData();
   }, [navigate]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/");
-  };
-
   if (!user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading...</div>;
   }
@@ -62,9 +57,20 @@ export default function MyPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-white p-4">
       <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
-        <h1 className="text-4xl font-bold text-cyan-400 mb-4">マイページ</h1>
-        
-        {/* メールとコース表示エリア */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-4xl font-bold text-cyan-400 text-glow font-display">
+            マイページ
+          </h1>
+          <Link 
+            to="/setting"
+            className="text-gray-400 hover:text-cyan-400 transition-colors duration-300"
+            aria-label="設定ページへ"
+          >
+            <FiSettings size={28} className="glowing-gear" />
+          </Link>
+        </div>
+
+        {/* 👇 メールとコース表示エリア */}
         <div className="mb-8 p-4 bg-black/30 rounded-lg text-left space-y-2">
           <div>
             <p className="text-gray-400 text-sm">メールアドレス:</p>
@@ -76,22 +82,10 @@ export default function MyPage() {
           </div>
         </div>
         
-        {/* コース選択ページへのリンクボタン */}
-        <Link 
-          to="/setting"
-          className="inline-block mb-8 px-6 py-2 border border-cyan-500 text-cyan-400 font-semibold rounded-full hover:bg-cyan-500 hover:text-white transition-colors"
-        >
-          コースを選択 / 変更する
-        </Link>
-        
         {/* カルーセル */}
         <div className="mb-8">
           <RotatingCarousel items={photoItems} />
         </div>
-
-        <button onClick={handleLogout} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300">
-          ログアウト
-        </button>
       </div>
     </div>
   );

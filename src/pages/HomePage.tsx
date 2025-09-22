@@ -101,10 +101,14 @@ export default function HomePage() {
       {/* コンテンツをz-indexで前面に配置 */}
       <div className="relative z-10 text-center max-w-4xl mx-auto space-y-6">
         <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-lg animate-pulse-light">
-          FMS
+          MyFMS
         </h1>
-        <p className="text-xl md:text-2xl text-gray-200 font-light leading-relaxed max-w-2xl mx-auto opacity-90">
-          IPUT生向けの学習プラットフォーム。データを集約し、よりスマートな学習環境を支援します。
+        <p className="text-xl md:text-2xl text-gray-200 font-light leading-relaxed max-w-3xl mx-auto opacity-90">
+          - IPUT生向け学習プラットフォーム -
+        </p>
+        <hr className="my-4 border-gray-700" />
+        <p className="text-xl md:text-2xl text-gray-200 font-light leading-relaxed max-w-3xl mx-auto opacity-90">
+          データを集約し、ひとりひとりに最適化された学習環境を提供します。
         </p>
         
         <div className="mt-8 flex justify-center space-x-4">

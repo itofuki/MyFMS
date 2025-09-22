@@ -1,30 +1,22 @@
 import { Outlet, Link } from "react-router-dom";
-
-const headerStyle: React.CSSProperties = {
-  padding: '1rem',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  textAlign: 'center',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
-};
-
-const linkStyle: React.CSSProperties = {
-  color: '#61dafb',
-  textDecoration: 'none',
-  fontSize: '1.5rem',
-  fontWeight: 'bold',
-};
+import './Layout.css'; // 作成したCSSファイルをインポート
 
 export default function Layout() {
   return (
     <div>
-      <header style={headerStyle}>
-        <Link to="/" style={linkStyle}>
-          FMS
-        </Link>
-      </header>
+      <nav className="nav-bar">
+        <div className="nav-container">
+          {/* ロゴ */}
+          <Link 
+            to="/" 
+            className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 via-blue-500 to-purple-500"
+          >
+            MyFMS
+          </Link>
+        </div>
+      </nav>
       
-      <main>
-        {/* Page content will be rendered here */}
+      <main className="main-content">
         <Outlet />
       </main>
     </div>

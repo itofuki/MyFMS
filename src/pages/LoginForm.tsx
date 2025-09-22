@@ -31,7 +31,7 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center text-white">
       <div className="w-full max-w-md p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
         <h2 className="text-3xl font-bold text-center mb-6 text-purple-400 drop-shadow-md">
-          🔮 Welcome Back
+          🔮 Login Form
         </h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}

@@ -1,12 +1,43 @@
 /* src/index.css */
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Orbitron:wght@400;700&display=swap');
 @import "tailwindcss";
 
 body {
+  font-family: 'Noto Sans JP', sans-serif;
   background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #00c6ff);
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
   height: 100vh;
+}
+
+.glowing-gear {
+  /* 基本的な transition */
+  transition: all 0.3s ease-in-out;
+  /* ネオン風の影 */
+  filter: drop-shadow(0 0 4px rgba(97, 218, 251, 0.5));
+}
+
+.glowing-gear:hover {
+  /* ホバー時に影を強くして光るように見せる */
+  filter: drop-shadow(0 0 10px rgba(97, 218, 251, 0.9));
+  /* わずかに回転 */
+  transform: rotate(30deg);
+}
+
+.text-glow {
+  text-shadow:
+    0 0 5px rgba(0, 220, 255, 0.5),
+    0 0 10px rgba(0, 220, 255, 0.4),
+    0 0 20px rgba(0, 220, 255, 0.3),
+    0 0 40px rgba(0, 220, 255, 0.2);
+}
+
+.text-gradient-cyan {
+  background-image: linear-gradient(45deg, #00A3B2, #00E0FF);
+  background-clip: text;
+  -webkit-background-clip: text; /* Safari対応 */
+  color: transparent;
 }
 
 @keyframes gradientBG {
