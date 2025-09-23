@@ -5,13 +5,18 @@ import { supabase } from "../lib/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import RadioGroup from "../components/RadioGroup";
+import Switch from "../components/Switch";
+import Collapsible from "../components/Collapsible";
 
 export default function Setting() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [course, setCourse] = useState<string>("");
   const [englishClass, setEnglishClass] = useState<string>("");
+  const [autoOpen, setAutoOpen] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
+  // ▼ REMOVED: 不要なstateを削除
+  // const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const courseOptions = [
     { value: 'AI', label: 'AI' },
@@ -39,12 +44,13 @@ export default function Setting() {
         setUser(user);
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("course, english_class")
+          .select("course, english_class, auto_open")
           .eq("user_id", user.id)
           .single();
         if (profiles) {
           setCourse(profiles.course || "");
           setEnglishClass(profiles.english_class || "");
+          setAutoOpen(profiles.auto_open ?? true);
         }
       } else {
         navigate("/login");
@@ -63,6 +69,7 @@ export default function Setting() {
       user_id: user.id,
       course: course,
       english_class: englishClass,
+      auto_open: autoOpen,
       updated_at: new Date().toISOString(),
     });
 
@@ -70,7 +77,7 @@ export default function Setting() {
     if (error) {
       alert("エラーが発生しました: " + error.message);
     } else {
-      alert("コースを更新しました！");
+      alert("設定を更新しました！");
       navigate("/mypage");
     }
   };
@@ -84,16 +91,16 @@ export default function Setting() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center text-white p-4">
-      <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
+      <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold text-cyan-400 font-display">設定</h1>
-            <Link to="/mypage" className="text-cyan-400 hover:underline">
-             マイページに戻る
-           </Link>
+          <h1 className="text-4xl font-bold text-cyan-400 font-display">設定</h1>
+          <Link to="/mypage" className="text-cyan-400 hover:underline">
+            マイページに戻る
+          </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mb-8">
+        <form onSubmit={handleSubmit} className="space-y-6 mb-8 text-left">
           <RadioGroup
             legend="所属するコースを選択してください"
             options={courseOptions}
@@ -106,6 +113,17 @@ export default function Setting() {
             selectedValue={englishClass}
             onChange={setEnglishClass}
           />
+          
+          {/* ▼ MODIFIED: 不要な条件分岐を削除し、Collapsibleを直接配置 */}
+          <Collapsible title="Advanced">
+            <Switch
+              label="授業開始前に自動で出席確認を開く"
+              checked={autoOpen}
+              onChange={setAutoOpen}
+            />
+            {/* 他にもAdvancedな設定があればここに追加できます */}
+          </Collapsible>
+
           <div className="text-center pt-4">
             <button type="submit" disabled={loading} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
               {loading ? "保存中..." : "保存"}
@@ -115,15 +133,14 @@ export default function Setting() {
         
         <hr className="border-t border-white/20 my-8" />
 
-        {/* ログアウトボタン */}
         <div className="text-center">
-           <h2 className="text-xl font-semibold text-gray-300 mb-4">アカウント操作</h2>
-           <button 
-             onClick={handleLogout} 
-             className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300"
-           >
-             ログアウト
-           </button>
+          <h3 className="text-lg font-semibold text-gray-300 mb-4">アカウント操作</h3>
+          <button 
+            onClick={handleLogout} 
+            className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300"
+          >
+            ログアウト
+          </button>
         </div>
       </div>
     </div>
