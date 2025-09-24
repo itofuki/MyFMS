@@ -30,8 +30,8 @@ const router = createBrowserRouter([
         element: <MyPage />,
       },
       {
-        path: "/setting", // 新しいページのパス
-        element: <Setting />, // 新しいページコンポーネント
+        path: "/setting",
+        element: <Setting />,
       },
     ]
   },

@@ -15,8 +15,6 @@ export default function Setting() {
   const [englishClass, setEnglishClass] = useState<string>("");
   const [autoOpen, setAutoOpen] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
-  // ▼ REMOVED: 不要なstateを削除
-  // const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const courseOptions = [
     { value: 'AI', label: 'AI' },
@@ -90,7 +88,7 @@ export default function Setting() {
   if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-white p-4">
+    <div className="min-h-screen flex flex-col items-center text-white p-4 mt-12">
       <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">
@@ -114,14 +112,12 @@ export default function Setting() {
             onChange={setEnglishClass}
           />
           
-          {/* ▼ MODIFIED: 不要な条件分岐を削除し、Collapsibleを直接配置 */}
           <Collapsible title="Advanced">
             <Switch
               label="授業開始前に自動で出席確認を開く"
               checked={autoOpen}
               onChange={setAutoOpen}
             />
-            {/* 他にもAdvancedな設定があればここに追加できます */}
           </Collapsible>
 
           <div className="text-center pt-4">

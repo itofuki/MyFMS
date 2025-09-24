@@ -49,15 +49,15 @@ export default function MyPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white p-4 mt-12">
-      <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
+    <div className="min-h-screen flex flex-col items-center text-white mt-12">
+      <div className="w-full max-w-2xl p-4 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
         <div className="flex justify-between items-center mb-6 sm:pb-4">
-          {/* 見出しとメールアドレスをグループ化 */}
-          <div className="flex items-baseline space-x-4">
-            <h1 className="text-4xl font-bold text-black-100 font-display">
+          
+          <div className="flex flex-col sm:flex-row items-baseline space-x-4">
+            <h1 className="text-2xl sm:text-4xl font-bold text-black-100 font-display">
               MyPage
             </h1>
-            <span className="text-lg font-medium text-gray-300">
+            <span className="text-md font-medium text-gray-300">
               {user.email}
             </span>
           </div>
@@ -71,12 +71,12 @@ export default function MyPage() {
           </Link>
         </div>
 
-        <div className="flex flex-col items-center justify-center bg-slate-900 text-white p-8">
-          <div className="flex items-baseline space-x-4">
-            <h1 className="mb-8 font-orbitron text-4xl font-bold text-cyan-300 text-glow">
+        <div className="flex flex-col items-center justify-center bg-slate-900 text-white p-4 sm:pt-10">
+          <div className="flex items-baseline space-x-4 pt-2 pb-4">
+            <h1 className="sm:mb-8 font-orbitron text-xl sm:text-3xl font-bold text-cyan-300 text-glow">
               TODAY'S SCHEDULE
             </h1>
-            <span className="text-2xl font-medium text-gray-300">
+            <span className="text-lg sm:text-2xl font-medium text-gray-300">
               {course || '未選択'}
             </span>
           </div>
@@ -84,7 +84,6 @@ export default function MyPage() {
           <Timetable />
         
         </div>
-        
         
       </div>
     </div>

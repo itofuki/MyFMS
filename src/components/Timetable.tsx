@@ -31,7 +31,6 @@ const TimeTableCard = ({ item }: { item: ScheduleItem }) => {
   `;
 
   return (
-    // ▼ ここからカード内部の構造を変更
     <div className={cardClasses}>
       <div className="flex items-start space-x-4">
         
@@ -63,10 +62,9 @@ const TimeTableCard = ({ item }: { item: ScheduleItem }) => {
   );
 };
 
-// --- 3. 時間割全体をまとめるコンポーネント (変更なし) ---
 export const Timetable = () => {
   return (
-    <div className="relative w-full p-4 font-sans">
+    <div className="relative w-full p-2 font-sans">
       <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-gradient-to-b from-cyan-500/30 via-cyan-500/10 to-transparent"></div>
       <div className="relative flex w-full flex-col items-center space-y-3">
         {scheduleData.map((item) => (
