@@ -37,7 +37,7 @@ const TimeTableCard = ({ item }: { item: ScheduleItem }) => {
         {/* 左カラム: 時刻と時限 */}
         <div className="flex-shrink-0 flex-col text-left text-cyan-400/80">
           <p className="text-lg font-bold">{item.period}限</p>
-          <p className="text-[8px]">{item.time}</p>
+          <p className="text-[9px] sm:text-xs">{item.time}</p>
         </div>
 
         {/* 右カラム: 授業詳細 */}

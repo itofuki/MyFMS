@@ -50,10 +50,10 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center text-white mt-12">
-      <div className="w-full max-w-2xl p-4 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
+      <div className="w-full max-w-2xl p-2 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
         <div className="flex justify-between items-center mb-6 sm:pb-4">
           
-          <div className="flex flex-col sm:flex-row items-baseline space-x-4">
+          <div className="flex flex-col sm:flex-row items-baseline space-x-4 pl-3 pr-3 pt-6">
             <h1 className="text-2xl sm:text-4xl font-bold text-black-100 font-display">
               MyPage
             </h1>
