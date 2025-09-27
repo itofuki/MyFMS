@@ -1,0 +1,8 @@
+.schedule-container {
+  width: 100%;
+  min-height: 250px; /* コンテンツの高さに応じて調整 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* アニメーション中のはみ出しを隠す */
+}

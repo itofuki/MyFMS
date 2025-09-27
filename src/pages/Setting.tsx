@@ -17,38 +17,37 @@ export default function Setting() {
   const [loading, setLoading] = useState<boolean>(false);
 
   const courseOptions = [
-    { value: 'AI', label: 'AI' },
-    { value: 'IoT', label: 'IoT' },
-    { value: 'Robot', label: 'Robot' },
-    { value: 'Game', label: 'Game' },
-    { value: 'CG', label: 'CG' },
+    { value: 'IA', label: 'AI' },
+    { value: 'IS', label: 'IoT' },
+    { value: 'IR', label: 'Robot' },
+    { value: 'DG', label: 'Game' },
+    { value: 'DC', label: 'CG' },
   ];
 
   const englishClassOptions = [
-    { value: 'A', label: 'A' },
-    { value: 'B', label: 'B' },
-    { value: 'C', label: 'C' },
-    { value: 'D', label: 'D' },
-    { value: 'E', label: 'E' },
-    { value: 'F', label: 'F' },
-    { value: 'G', label: 'G' },
+    { value: '英語コミュニケーションⅡbA', label: 'A' },
+    { value: '英語コミュニケーションⅡbB', label: 'B' },
+    { value: '英語コミュニケーションⅡbC', label: 'C' },
+    { value: '英語コミュニケーションⅡbD', label: 'D' },
+    { value: '英語コミュニケーションⅡbE', label: 'E' },
+    { value: '英語コミュニケーションⅡbF', label: 'F' },
+    { value: '英語コミュニケーションⅡbG', label: 'G' },
   ];
 
-  // ユーザー情報と現在のコース設定を取得
   useEffect(() => {
     const fetchUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        const { data: profiles } = await supabase
-          .from("profiles")
+        const { data: profile } = await supabase
+          .from("profile")
           .select("course, english_class, auto_open")
           .eq("user_id", user.id)
           .single();
-        if (profiles) {
-          setCourse(profiles.course || "");
-          setEnglishClass(profiles.english_class || "");
-          setAutoOpen(profiles.auto_open ?? true);
+        if (profile) {
+          setCourse(profile.course || "");
+          setEnglishClass(profile.english_class || "");
+          setAutoOpen(profile.auto_open ?? true);
         }
       } else {
         navigate("/login");
@@ -57,13 +56,12 @@ export default function Setting() {
     fetchUserData();
   }, [navigate]);
 
-  // コースをDBに保存する処理
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!user) return;
     setLoading(true);
 
-    const { error } = await supabase.from("profiles").upsert({
+    const { error } = await supabase.from("profile").upsert({
       user_id: user.id,
       course: course,
       english_class: englishClass,
@@ -89,11 +87,13 @@ export default function Setting() {
 
   return (
     <div className="min-h-screen flex flex-col items-center text-white p-4 mt-12">
-      <div className="w-full max-w-2xl p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
+      <div className="w-full max-w-2xl p-2 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-cyan-400 font-display">設定</h1>
-          <Link to="/mypage" className="text-cyan-400 hover:underline">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display pl-3 pt-6">
+            設定
+          </h1>
+          <Link to="/mypage" className="text-md text-cyan-400 hover:underline pr-3 pt-6">
             マイページに戻る
           </Link>
         </div>
