@@ -86,7 +86,7 @@ export default function Setting() {
   if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white p-4 mt-12">
+    <div className="min-h-screen flex flex-col items-center text-white p-2 mt-20">
       <div className="w-full max-w-2xl p-2 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">

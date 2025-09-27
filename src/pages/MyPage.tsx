@@ -133,8 +133,8 @@ export default function MyPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white px-3 mt-12 sm:mt-12">
-      <div className="w-full max-w-4xl px-1 py-3 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
+    <div className="min-h-screen flex flex-col items-center text-white px-2 mt-20">
+      <div className="w-full max-w-4xl px-2 py-3 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20 text-center">
         
         <div className="flex justify-between items-center mb-6 sm:pb-4">
           <div className="flex flex-col sm:flex-row items-baseline space-x-4 pl-3 pt-6 sm:pt-4">
