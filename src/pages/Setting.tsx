@@ -11,8 +11,8 @@ import Collapsible from "../components/Collapsible";
 export default function Setting() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [course, setCourse] = useState<string>("");
-  const [englishClass, setEnglishClass] = useState<string>("");
+  const [courseID, setCourseID] = useState<string | null>(null);
+  const [englishID, setEnglishID] = useState<number | null>(null);
   const [autoOpen, setAutoOpen] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -25,13 +25,13 @@ export default function Setting() {
   ];
 
   const englishClassOptions = [
-    { value: '英語コミュニケーションⅡbA', label: 'A' },
-    { value: '英語コミュニケーションⅡbB', label: 'B' },
-    { value: '英語コミュニケーションⅡbC', label: 'C' },
-    { value: '英語コミュニケーションⅡbD', label: 'D' },
-    { value: '英語コミュニケーションⅡbE', label: 'E' },
-    { value: '英語コミュニケーションⅡbF', label: 'F' },
-    { value: '英語コミュニケーションⅡbG', label: 'G' },
+    { value: 3418, label: 'A' },
+    { value: 3419, label: 'B' },
+    { value: 3420, label: 'C' },
+    { value: 3421, label: 'D' },
+    { value: 3422, label: 'E' },
+    { value: 3423, label: 'F' },
+    { value: 3424, label: 'G' },
   ];
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export default function Setting() {
         setUser(user);
         const { data: profile } = await supabase
           .from("profile")
-          .select("course, english_class, auto_open")
+          .select("course_id, english_id, auto_open")
           .eq("user_id", user.id)
           .single();
         if (profile) {
-          setCourse(profile.course || "");
-          setEnglishClass(profile.english_class || "");
+          setCourseID(profile.course_id || null);
+          setEnglishID(profile.english_id || null);
           setAutoOpen(profile.auto_open ?? true);
         }
       } else {
@@ -63,8 +63,8 @@ export default function Setting() {
 
     const { error } = await supabase.from("profile").upsert({
       user_id: user.id,
-      course: course,
-      english_class: englishClass,
+      course_id: courseID,
+      english_id: englishID,
       auto_open: autoOpen,
       updated_at: new Date().toISOString(),
     });
@@ -86,7 +86,7 @@ export default function Setting() {
   if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white p-2 mt-20">
+    <div className="min-h-screen flex flex-col items-center text-white px-2 mt-20">
       <div className="w-full max-w-2xl p-2 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">
@@ -102,14 +102,14 @@ export default function Setting() {
           <RadioGroup
             legend="所属するコースを選択してください"
             options={courseOptions}
-            selectedValue={course}
-            onChange={setCourse}
+            selectedValue={courseID}
+            onChange={setCourseID}
           />
           <RadioGroup
             legend="英語のクラスを選択してください"
             options={englishClassOptions}
-            selectedValue={englishClass}
-            onChange={setEnglishClass}
+            selectedValue={englishID}
+            onChange={setEnglishID}
           />
           
           <Collapsible title="Advanced">
@@ -118,6 +118,7 @@ export default function Setting() {
               checked={autoOpen}
               onChange={setAutoOpen}
             />
+            <p>※ポップアップブロックを解除してください</p>
           </Collapsible>
 
           <div className="text-center pt-4">

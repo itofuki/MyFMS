@@ -6,129 +6,149 @@ import { useScheduledReloader } from "../hooks/useScheduledReloader";
 import { FiSettings, FiMaximize, FiMinimize } from "react-icons/fi";
 import { Timetable, type Day, type Subject } from '../components/Timetable';
 
+const VALID_DAYS: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+function isDay(key: any): key is Day {
+  return VALID_DAYS.includes(key);
+}
+
+const periodTimes = [
+  { period: 1, start: { h: 9, m: 15 }, end: { h: 10, m: 55 } },
+  { period: 2, start: { h: 10, m: 55 }, end: { h: 12, m: 25 } },
+  { period: 3, start: { h: 13, m: 20 }, end: { h: 14, m: 50 } },
+  { period: 4, start: { h: 15, m: 0 }, end: { h: 16, m: 30 } },
+  { period: 5, start: { h: 16, m: 40 }, end: { h: 18, m: 10 } },
+  { period: 6, start: { h: 18, m: 20 }, end: { h: 19, m: 50 } },
+];
+
+type TimetableRpcData = {
+  id: number;
+  name: string;
+  teacher: string;
+  wday: string;
+  period: number;
+  classroom: string;
+};
+
 export default function MyPage() {
   const reloadTimes = [
-    { hour: 9, minute: 5 }, { hour: 10, minute: 45 }, { hour: 13, minute: 10 },
-    { hour: 14, minute: 50 }, { hour: 16, minute: 30 }, { hour: 18, minute: 10 },
-    { hour: 19, minute: 50 },
+    { hour: 9, minute: 10 }, { hour: 10, minute: 50 }, { hour: 13, minute: 15 },
+    { hour: 14, minute: 55 }, { hour: 16, minute: 35 }, { hour: 18, minute: 15 },
+    { hour: 19, minute: 55 },
   ];
   useScheduledReloader(reloadTimes);
 
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [course, setCourse] = useState<string>("");
+  const [courseName, setCourseName] = useState<string>("");
   const [isWeeklyView, setIsWeeklyView] = useState(false);
   const [weeklySubjects, setWeeklySubjects] = useState<Record<Day, Subject[]>>({
-    Mon: [],
-    Tue: [],
-    Wed: [],
-    Thu: [],
-    Fri: [],
+    Mon: [], Tue: [], Wed: [], Thu: [], Fri: [],
   });
+  const [loading, setLoading] = useState(true);
+  const [autoOpenEnabled, setAutoOpenEnabled] = useState(false);
+  const [openedSubjects, setOpenedSubjects] = useState<string[]>([]);
 
   const toggleTimetableView = () => {
     setIsWeeklyView(prev => !prev);
   };
 
   useEffect(() => {
-  const fetchUserDataAndSubjects = async () => {
+  const fetchUserTimetable = async () => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUser(user);
-      const { data: profile } = await supabase
-        .from("profile")
-        .select("course, english_class")
-        .eq("user_id", user.id)
-        .single();
 
-      console.log('取得したプロフィール:', profile);
-      
-      if (profile && profile.course) {
-        setCourse(profile.course);
-
-        // 1. ユーザーのコースに属する授業を、時間割情報と共にすべて取得
-        const { data: allSubjects, error } = await supabase
-          .from('subject')
-          .select(`
-            id,
-            name,
-            teacher,
-            subject_period (wday, period, classroom)
-          `)
-          .or(`course_name.eq.${profile.course},course_name.is.null`);
-
-        if (error) {
-          console.error('授業データの取得に失敗しました:', error);
-          return;
-        }
-
-        if (allSubjects) {
-          console.log('1. Supabaseから取得したデータ:', allSubjects);
-
-          let filteredSubjects = allSubjects;
-
-          // ユーザーに english_class が設定されている場合のみ、絞り込みを実行
-          if (profile.english_class) {
-            filteredSubjects = allSubjects.filter(subject => {
-              // 「英語」という名前で始まる科目は、特別扱いする
-              if (subject.name.startsWith('英語コミュニケーション')) {
-                // ユーザーのクラスと科目名が完全に一致するか判定
-                return subject.name === profile.english_class;
-              }
-              // 「英語」で始まらない科目は、すべて表示対象とする
-              return true;
-            });
-          } else {
-            // もしユーザーに english_class が設定されていない場合、
-            // どの英語クラスかわからないため、すべての英語科目を非表示にする
-            filteredSubjects = allSubjects.filter(subject => !subject.name.startsWith('英語'));
-          }
-
-          console.log('2. 英語クラスで絞り込んだ後:', filteredSubjects);
-
-          // 3. Timetableコンポーネント用のデータ形式に整形
-          const flattenedSubjects = filteredSubjects.flatMap(subject => 
-            subject.subject_period.map(periodInfo => ({
-              id: `${subject.id}-${periodInfo.wday}-${periodInfo.period}`,
-              name: subject.name,
-              day_of_week: periodInfo.wday,
-              period: periodInfo.period,
-              classroom: subject.teacher,
-              teacher: periodInfo.classroom,
-            }))
-          );
-
-          console.log("--- ステップ3: 整形後のデータ詳細チェック ---");
-          flattenedSubjects.forEach(sub => {
-            console.log(`科目: ${sub.name}, 曜日: "${sub.day_of_week}" (文字数: ${sub.day_of_week?.length})`);
-          });
-
-          const groupedSubjects = flattenedSubjects.reduce((acc, subject) => {
-              const day = subject.day_of_week?.trim() as Day | undefined;
-              if (day && Object.keys(acc).includes(day)) {
-                acc[day].push(subject);
-              }
-              return acc;
-            }, { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [] } as Record<Day, Subject[]>);
-
-
-          Object.values(groupedSubjects).forEach(dayArray => {
-            dayArray.sort((a, b) => a.period - b.period);
-          });
-
-          console.log('4. 最終的な曜日ごとのオブジェクト:', groupedSubjects);
-          
-          setWeeklySubjects(groupedSubjects);
-        }
-      }
-    } else {
+    if (!user) {
       navigate("/login");
+      return;
     }
-  };
-  fetchUserDataAndSubjects();
-}, [navigate]);
 
-  if (!user) {
+    setUser(user);
+    const [timetableRes, profileRes] = await Promise.all([
+      supabase.rpc('get_user_timetable', { p_user_id: user.id }),
+      supabase.from("profile").select("auto_open, course(name)").eq("user_id", user.id).single()
+    ]);
+    
+    if (timetableRes.error) {
+      console.error("RPC関数の呼び出しに失敗しました:", timetableRes.error);
+      setLoading(false);
+      return;
+    }
+
+    if(profileRes.error) {
+      console.error("プロフィール情報の取得に失敗:", profileRes.error);
+    } else {
+      const profileData = profileRes.data as any;
+      setCourseName(profileData?.course?.name || "コース未設定");
+      setAutoOpenEnabled(profileData?.auto_open ?? false);
+    }
+
+    const initialSubjects: Record<Day, Subject[]> = {
+      Mon: [], Tue: [], Wed: [], Thu: [], Fri: [],
+    };
+
+    const groupedSubjects = (timetableRes.data as TimetableRpcData[] || []).reduce(
+      (acc: Record<Day, Subject[]>, subject: TimetableRpcData) => {
+        const day = subject.wday;
+        if (isDay(day)) {
+          acc[day].push({
+            id: `${subject.id}-${day}-${subject.period}`,
+            name: subject.name,
+            teacher: subject.teacher,
+            wday: day,
+            period: subject.period,
+            classroom: subject.classroom,
+          });
+        }
+        return acc;
+      }, initialSubjects);
+
+    Object.values(groupedSubjects).forEach(dayArray => {
+      dayArray.sort((a, b) => a.period - b.period);
+    });
+
+    setWeeklySubjects(groupedSubjects);
+    setLoading(false);
+  };
+  fetchUserTimetable();
+  }, [navigate]);
+
+  useEffect(() => {
+    const todayKey = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][new Date().getDay() - 1];
+    const todaySubjects = weeklySubjects[todayKey as Day] || [];
+
+    // 設定がオフ、または読み込み中、または今日の授業がなければ何もしない
+    if (!autoOpenEnabled || loading || todaySubjects.length === 0) {
+      return;
+    }
+
+    // ページが読み込まれた時点の時刻で一度だけチェックする
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
+
+    todaySubjects.forEach(subject => {
+      const timeInfo = periodTimes.find(p => p.period === subject.period);
+      if (!timeInfo) return;
+
+      const startTime = new Date(now);
+      startTime.setHours(timeInfo.start.h, timeInfo.start.m, 0, 0);
+      
+      const openTime = new Date(startTime.getTime() - 5 * 60 * 1000); // 5分前
+
+      // ページがリロードされた時刻が5分前の範囲内、かつまだ開いていない場合
+      if (now >= openTime && now < startTime && !openedSubjects.includes(subject.id)) {
+        console.log(`${subject.name} のLMSページを開きます...`);
+        
+        const dbId = subject.id.split('-')[0];
+        const url = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${dbId}`;
+        
+        window.open(url, '_blank');
+        
+        setOpenedSubjects(prev => [...prev, subject.id]);
+      }
+    });
+  // 依存配列から openedSubjects を削除し、データ読み込み完了時にのみ実行されるようにする
+  }, [loading, autoOpenEnabled, weeklySubjects]);
+
+  if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading...</div>;
   }
 
@@ -139,7 +159,7 @@ export default function MyPage() {
         <div className="flex justify-between items-center mb-6 sm:pb-4">
           <div className="flex flex-col sm:flex-row items-baseline space-x-4 pl-3 pt-6 sm:pt-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-white font-display">マイページ</h1>
-            <span className="text-md font-medium text-gray-300">{user.email}</span>
+            {user && <span className="text-md font-medium text-gray-300">{user.email}</span>}
           </div>
           <Link to="/setting" className="text-gray-400 hover:text-cyan-400 transition-colors duration-300 pr-3 pt-6" aria-label="設定ページへ">
             <FiSettings size={28} className="glowing-gear" />
@@ -152,7 +172,7 @@ export default function MyPage() {
               <h1 className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
                 {isWeeklyView ? "WEEKLY SCHEDULE" : "TODAY'S SCHEDULE"}
               </h1>
-              <span className="text-base sm:text-2xl font-medium text-gray-300">{course || '未選択'}</span>
+              <span className="text-base sm:text-2xl font-medium text-gray-300">{courseName || '未選択'}</span>
             </div>
             <button onClick={toggleTimetableView} className="text-gray-400 hover:text-cyan-400 transition-colors duration-300" aria-label="表示切替">
               {isWeeklyView ? <FiMinimize size={24} /> : <FiMaximize size={24} />}

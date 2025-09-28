@@ -7,7 +7,7 @@ type Props = {
 
 const Collapsible: FC<Props> = ({ title, children }) => {
   return (
-    <details className="group border-t border-white/20 py-3">
+    <details className="group border-t border-white/20 py-5">
 
       <summary className="flex cursor-pointer list-none items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-300">{title}</h2>
