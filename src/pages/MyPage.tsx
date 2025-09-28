@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { useScheduledReloader } from "../hooks/useScheduledReloader";
-import { FiSettings, FiMaximize, FiMinimize } from "react-icons/fi";
+import { FiSettings, FiMaximize, FiMinimize, FiArrowRight } from "react-icons/fi";
 import { Timetable, type Day, type Subject } from '../components/Timetable';
 
 const VALID_DAYS: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -47,6 +47,7 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [autoOpenEnabled, setAutoOpenEnabled] = useState(false);
   const [openedSubjects, setOpenedSubjects] = useState<string[]>([]);
+  const [isProfileSet, setIsProfileSet] = useState(false);
 
   const toggleTimetableView = () => {
     setIsWeeklyView(prev => !prev);
@@ -76,9 +77,17 @@ export default function MyPage() {
 
     if(profileRes.error) {
       console.error("プロフィール情報の取得に失敗:", profileRes.error);
+      setIsProfileSet(false);
     } else {
       const profileData = profileRes.data as any;
-      setCourseName(profileData?.course?.name || "コース未設定");
+      const courseNameValue = profileData?.course?.name;
+      if (courseNameValue) {
+        setCourseName(courseNameValue);
+        setIsProfileSet(true);
+      } else {
+        setCourseName("コース未設定");
+        setIsProfileSet(false);
+      }
       setAutoOpenEnabled(profileData?.auto_open ?? false);
     }
 
@@ -179,7 +188,25 @@ export default function MyPage() {
             </button>
           </div>
           
-          <Timetable isWeeklyView={isWeeklyView} weeklyData={weeklySubjects} />
+          {isProfileSet ? (
+            <Timetable isWeeklyView={isWeeklyView} weeklyData={weeklySubjects} />
+          ) : (
+            <div className="text-center py-10 px-4">
+              <h2 className="text-xl font-semibold text-white mb-2">
+                時間割を表示するには設定が必要です
+              </h2>
+              <p className="text-gray-400 mb-6">
+                所属コースと英語クラスを選択してください。
+              </p>
+              <Link
+                to="/setting"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+              >
+                <span>設定ページへ</span>
+                <FiArrowRight />
+              </Link>
+            </div>
+          )}
         
         </div>
         

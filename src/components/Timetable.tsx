@@ -75,7 +75,7 @@ const DailySchedule = ({ subjects }: { subjects: Subject[] }) => (
             >
               <div className="flex flex-col items-center justify-center text-center basis-1/5 flex-shrink-0 pr-3 border-r border-slate-600">
                 <p className="flex items-baseline text-cyan-400 font-bold text-xl md:text-2xl">
-                  <span className="text-md">{subject.period}</span>
+                  <span className="text-md ">{subject.period}</span>
                   <span className="text-base font-medium text-cyan-500 ml-[1px] md:ml-[3px]">限</span>
                 </p>
                 {timeInfo && (
