@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Link } from "react-router-dom";
+import { toast } from 'sonner';
 
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // async/await を使って非同期処理を記述
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       // SupabaseのsignUpメソッドを呼び出す
@@ -28,14 +31,18 @@ export default function RegisterForm() {
       }
 
       // 成功した場合
-      alert("登録確認メールを送信しました。メールボックスをご確認ください。");
+      toast.success("登録確認メールを送信しました。メールボックスをご確認ください。");
       console.log("ユーザー情報:", data.user);
+      setEmail("");
+      setPassword("");
 
     } catch (error) {
       // エラー処理
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,9 +82,12 @@ export default function RegisterForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300"
+            // ✨ 変更点: ローディング中はボタンを無効化し、スタイルも変更
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Register
+            {/* ✨ 変更点: ローディング状態に応じてボタンのテキストを変更 */}
+            {loading ? '登録中...' : 'Register'}
           </button>
         </form>
 

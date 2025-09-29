@@ -4,6 +4,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
+import { toast } from 'sonner';
 import RadioGroup from "../components/RadioGroup";
 import Switch from "../components/Switch";
 import Collapsible from "../components/Collapsible";
@@ -61,24 +62,30 @@ export default function Setting() {
     if (!user) return;
     setLoading(true);
 
-    const { error } = await supabase.from("profile").upsert({
-      user_id: user.id,
-      course_id: courseID,
-      english_id: englishID,
-      auto_open: autoOpen,
-      updated_at: new Date().toISOString(),
-    });
+    try {
+      const { error } = await supabase.from("profile").upsert({
+        user_id: user.id,
+        course_id: courseID,
+        english_id: englishID,
+        auto_open: autoOpen,
+        updated_at: new Date().toISOString(),
+      });
 
-    setLoading(false);
-    if (error) {
-      alert("エラーが発生しました: " + error.message);
-    } else {
-      alert("設定を更新しました！");
+      if (error) throw error;
+
+      toast.success("設定を更新しました！");
       navigate("/mypage");
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(`エラーが発生しました: ${error.message}`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleLogout = async () => {
+    toast.success("ログアウトしました。");
     await supabase.auth.signOut();
     navigate("/");
   };

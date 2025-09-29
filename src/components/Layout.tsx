@@ -1,5 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
-import './Layout.css'; // 作成したCSSファイルをインポート
+import { Toaster } from 'sonner';
+import './Layout.css';
 
 export default function Layout() {
   return (
@@ -19,6 +20,17 @@ export default function Layout() {
       <main className="main-content">
         <Outlet />
       </main>
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: 'rgba(30, 58, 138, 0.9)', // 濃い青系の半透明な背景
+            color: '#e2e8f0',                  // 明るいグレーの文字色
+            border: '1px solid #334155',       // 少し明るいボーダー
+          },
+        }}
+      />
     </div>
   );
 }

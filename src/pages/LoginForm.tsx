@@ -3,14 +3,18 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from 'sonner';
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     try {
       // SupabaseのsignInWithPasswordメソッドを呼び出す
       const { error } = await supabase.auth.signInWithPassword({
@@ -18,12 +22,14 @@ export default function LoginForm() {
         password: password,
       });
       if (error) throw error;
-      alert("ログインしました！");
+      toast.success("ログインしました！");
       navigate("/mypage");
     } catch (error) {
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,9 +69,12 @@ export default function LoginForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300"
+            // ✨ 変更点: ローディング中はボタンを無効化し、スタイルも変更
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {/* ✨ 変更点: ローディング状態に応じてボタンのテキストを変更 */}
+            {loading ? 'ログイン中...' : 'Login'}
           </button>
         </form>
 
