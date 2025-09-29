@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react'; // useEffectを削除
 import { motion, AnimatePresence } from 'framer-motion';
 import './Timetable.css';
 
@@ -35,6 +35,24 @@ const periodTimes = [
 
 const formatTime = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
+/**
+ * 現在が授業時間内（開始5分前〜終了時刻）か判定するヘルパー関数
+ */
+const isCurrentClassTime = (period: number, currentTime: Date): boolean => {
+  const timeInfo = periodTimes.find(p => p.period === period);
+  if (!timeInfo) return false;
+
+  const now = currentTime;
+
+  const classStartTime = new Date(now);
+  classStartTime.setHours(timeInfo.start.h, timeInfo.start.m - 5, 0, 0);
+
+  const classEndTime = new Date(now);
+  classEndTime.setHours(timeInfo.end.h, timeInfo.end.m, 0, 0);
+
+  return now >= classStartTime && now <= classEndTime;
+};
+
 
 const PeriodAxis = ({ maxPeriods }: { maxPeriods: number }) => (
   <div className="flex flex-col items-center space-y-2">
@@ -52,13 +70,14 @@ const PeriodAxis = ({ maxPeriods }: { maxPeriods: number }) => (
   </div>
 );
 
-const DailySchedule = ({ subjects }: { subjects: Subject[] }) => (
+const DailySchedule = ({ subjects, currentTime }: { subjects: Subject[], currentTime: Date }) => (
   <motion.div className="w-full max-w-md p-4 space-y-3">
     {subjects.length > 0 ? (
       subjects.map(subject => {
         const dbId = subject.id.split('-')[0];
         const url = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${dbId}`;
         const timeInfo = periodTimes.find(p => p.period === subject.period);
+        const isCurrent = isCurrentClassTime(subject.period, currentTime);
 
         return (
           <a
@@ -71,7 +90,8 @@ const DailySchedule = ({ subjects }: { subjects: Subject[] }) => (
             <motion.div
               layoutId={`card-container-${subject.id}`}
               transition={layoutTransition}
-              className="w-full bg-slate-800/80 border border-white/20 rounded-lg p-2 md:p-3 text-left flex items-center space-x-4 hover:bg-slate-700/60 transition-colors duration-200"
+              animate={{ scale: isCurrent ? 1.10 : 1 }}
+              className={`w-full bg-slate-800/80 border border-white/20 rounded-lg p-2 md:p-3 text-left flex items-center space-x-4 hover:bg-slate-700/60 transition-colors duration-200 ${isCurrent ? 'is-current-class' : ''}`}
             >
               <div className="flex flex-col items-center justify-center text-center basis-1/5 flex-shrink-0 pr-3 border-r border-slate-600">
                 <p className="flex items-baseline text-cyan-400 font-bold text-xl md:text-2xl">
@@ -79,9 +99,9 @@ const DailySchedule = ({ subjects }: { subjects: Subject[] }) => (
                   <span className="text-base font-medium text-cyan-500 ml-[1px] md:ml-[3px]">限</span>
                 </p>
                 {timeInfo && (
-                  <p className="text-gray-400 text-[9px] md:text-xs font-mono">
-                    {formatTime(timeInfo.start.h, timeInfo.start.m)}-{formatTime(timeInfo.end.h, timeInfo.end.m)}
-                  </p>
+                <p className="text-gray-400 text-[9px] md:text-xs font-mono">
+                  {formatTime(timeInfo.start.h, timeInfo.start.m)}-{formatTime(timeInfo.end.h, timeInfo.end.m)}
+                </p>
                 )}
               </div>
 
@@ -99,7 +119,7 @@ const DailySchedule = ({ subjects }: { subjects: Subject[] }) => (
   </motion.div>
 );
 
-const WeeklySchedule = ({ weeklySubjects }: { weeklySubjects: Record<Day, Subject[]> }) => {
+const WeeklySchedule = ({ weeklySubjects, currentTime, today }: { weeklySubjects: Record<Day, Subject[]>, currentTime: Date, today: Day }) => {
   const MAX_PERIODS = 6;
   const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -112,7 +132,7 @@ const WeeklySchedule = ({ weeklySubjects }: { weeklySubjects: Record<Day, Subjec
       </div>
       {days.map(day => (
         <div key={day} className="flex flex-col items-center space-y-2 min-w-0">
-          <p className="font-bold text-cyan-300">{day}</p>
+          <p className={`font-bold ${day === today ? 'text-cyan-300' : 'text-gray-500'}`}>{day}</p>
           <div className="w-full space-y-2">
             {Array.from({ length: MAX_PERIODS }, (_, i) => i + 1).map(period => {
               const subject = weeklySubjects[day]?.find(s => s.period === period);
@@ -120,24 +140,27 @@ const WeeklySchedule = ({ weeklySubjects }: { weeklySubjects: Record<Day, Subjec
               if (subject) {
                 const dbId = subject.id.split('-')[0];
                 const url = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${dbId}`;
-                  return (
-                    <a
-                      key={subject.id}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block h-15 md:h-16 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                const isCurrent = day === today && isCurrentClassTime(subject.period, currentTime);
+
+                return (
+                  <a
+                    key={subject.id}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block h-15 md:h-16 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                  >
+                    <motion.div
+                      layoutId={`card-container-${subject.id}`}
+                      transition={layoutTransition}
+                      animate={{ scale: isCurrent ? 1.03 : 1 }}
+                      className={`w-full h-full bg-slate-800/80 rounded p-1 md:p-2 flex flex-col justify-center items-center space-y-1 text-center hover:bg-slate-700/60 transition-colors duration-200 ${isCurrent ? 'is-current-class' : ''}`}
                     >
-                      <motion.div
-                        layoutId={`card-container-${subject.id}`}
-                        transition={layoutTransition}
-                        className="w-full h-full bg-slate-800/80 rounded p-1 md:p-2 flex flex-col justify-center items-center space-y-1 text-center hover:bg-slate-700/60 transition-colors duration-200"
-                      >
-                        <p className="font-semibold text-white line-clamp-2 md:w-full text-[10px] md:text-xs">{subject.name}</p>
-                        <p className="text-gray-400 line-clamp-1 text-[9px] md:text-[10px]">{subject.classroom}</p>
-                      </motion.div>
-                    </a>
-                  );
+                      <p className="font-semibold text-white line-clamp-2 md:w-full text-[10px] md:text-xs">{subject.name}</p>
+                      <p className="text-gray-400 line-clamp-1 text-[9px] md:text-[10px]">{subject.classroom}</p>
+                    </motion.div>
+                  </a>
+                );
               } else {
                 return (
                   <div
@@ -156,23 +179,25 @@ const WeeklySchedule = ({ weeklySubjects }: { weeklySubjects: Record<Day, Subjec
 
 // --- メインコンポーネント ---
 export const Timetable: React.FC<TimetableProps> = ({ isWeeklyView, weeklyData }) => {
-  const getTodayDay = (): Day => {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }));
-    const dayIndex = now.getDay();
+  // ページ読み込み時の時刻を一度だけ取得
+  const [currentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
+
+  const getTodayDay = (date: Date): Day => {
+    const dayIndex = date.getDay();
     const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     return days[dayIndex - 1] || 'Fri'; 
   };
-  
-  const today = getTodayDay();
+
+  const today = getTodayDay(currentTime);
   const todaySubjects = weeklyData[today] || [];
 
   return (
     <div className="schedule-container">
       <AnimatePresence mode="wait">
         {isWeeklyView ? (
-          <WeeklySchedule key="weekly" weeklySubjects={weeklyData} />
+          <WeeklySchedule key="weekly" weeklySubjects={weeklyData} currentTime={currentTime} today={today} />
         ) : (
-          <DailySchedule key="daily" subjects={todaySubjects} />
+          <DailySchedule key="daily" subjects={todaySubjects} currentTime={currentTime} />
         )}
       </AnimatePresence>
     </div>

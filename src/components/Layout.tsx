@@ -25,9 +25,9 @@ export default function Layout() {
         position="top-right"
         toastOptions={{
           style: {
-            background: 'rgba(30, 58, 138, 0.9)', // 濃い青系の半透明な背景
-            color: '#e2e8f0',                  // 明るいグレーの文字色
-            border: '1px solid #334155',       // 少し明るいボーダー
+            background: 'rgba(30, 58, 138, 0.9)',
+            color: '#e2e8f0',
+            border: '1px solid #334155',
           },
         }}
       />
