@@ -11,7 +11,7 @@ const StudyRoom = () => {
 
   const weekOfMonth = Math.ceil((mday + firstDayOfWeek) / 7) - 1;
   const imageName = `${month + 1}.${weekOfMonth}.webp`;
-  const imagePath = `/public/images/studyroom/${imageName}`;
+  const imagePath = `/images/studyroom/${imageName}`;
 
   return (
     <div className="min-h-[200px] flex flex-col items-center justify-center">
