@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import type { IconType } from 'react-icons';
+import { FiMaximize, FiMinimize, FiArrowRight } from 'react-icons/fi';
 import './Timetable.css';
 
 export type Subject = {
@@ -13,11 +16,6 @@ export type Subject = {
   teacher: string;
 };
 export type Day = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
-
-interface TimetableProps {
-  isWeeklyView: boolean;
-  weeklyData: Record<Day, Subject[]>;
-}
 
 const layoutTransition = {
   type: "spring",
@@ -36,9 +34,6 @@ const periodTimes = [
 
 const formatTime = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
-/**
- * 現在が授業時間内（開始5分前〜終了時刻）か判定するヘルパー関数
- */
 const isCurrentClassTime = (period: number, currentTime: Date): boolean => {
   const timeInfo = periodTimes.find(p => p.period === period);
   if (!timeInfo) return false;
@@ -180,15 +175,18 @@ const WeeklySchedule = ({ weeklySubjects, currentTime, today }: { weeklySubjects
   );
 };
 
-// --- メインコンポーネント ---
-export const Timetable: React.FC<TimetableProps> = ({ isWeeklyView, weeklyData }) => {
-  // ページ読み込み時の時刻を一度だけ取得
+interface TimetableDisplayProps {
+  isWeeklyView: boolean;
+  weeklyData: Record<Day, Subject[]>;
+}
+
+const TimetableDisplay: React.FC<TimetableDisplayProps> = ({ isWeeklyView, weeklyData }) => {
   const [currentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
 
   const getTodayDay = (date: Date): Day => {
     const dayIndex = date.getDay();
     const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    return days[dayIndex - 1] || ''; 
+    return days[dayIndex - 1] || 'Fri';
   };
 
   const today = getTodayDay(currentTime);
@@ -203,6 +201,83 @@ export const Timetable: React.FC<TimetableProps> = ({ isWeeklyView, weeklyData }
           <DailySchedule key="daily" subjects={todaySubjects} currentTime={currentTime} />
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+
+// =================================================================
+// メインコンポーネント (MyPageから呼び出すのはこちら)
+// =================================================================
+
+interface TimetableContainerProps {
+  isWeeklyView: boolean;
+  toggleTimetableView: () => void;
+  dynamicTitle: string;
+  courseName: string;
+  courseStyle: {
+    icon: IconType;
+    label: string;
+    color: string;
+  } | null;
+  isProfileSet: boolean;
+  weeklySubjects: Record<Day, Subject[]>;
+}
+
+export const TimetableContainer: React.FC<TimetableContainerProps> = ({
+  isWeeklyView,
+  toggleTimetableView,
+  dynamicTitle,
+  courseStyle,
+  isProfileSet,
+  weeklySubjects,
+}) => {
+  return (
+    <div className="flex flex-col bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl rounded-lg">
+      <div className="relative w-full flex justify-center items-center h-15 md:h-18 px-2 sm:px-6 border-b border-slate-700">
+        {courseStyle && (
+          <div className={`absolute left-4 sm:left-6 flex items-center gap-1 md:gap-2 ${courseStyle.color}`}>
+            <span className="pt-1 text-lg md:text-2xl">
+              <courseStyle.icon />
+            </span>
+            <span className="font-semibold text-lg md:text-2xl">
+              {courseStyle.label}
+            </span>
+            <span className="font-semibold text-xl hidden sm:block pt-1">
+              {courseStyle.label !== '未選択' && ' Course'}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-center items-baseline space-x-4 text-center">
+          <h1 className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
+            {dynamicTitle}
+          </h1>
+        </div>
+        <button 
+          onClick={toggleTimetableView} 
+          className="absolute right-4 sm:right-6 text-gray-400 hover:text-cyan-400 transition-colors duration-300" 
+          aria-label="表示切替"
+        >
+          {isWeeklyView ? <FiMinimize size={24} /> : <FiMaximize size={24} />}
+        </button>
+      </div>
+
+      {isProfileSet ? (
+        <div className="flex justify-center items-center min-h-[350px] bg-slate-950 rounded-lg px-2 pt-4 pb-7">
+          <TimetableDisplay isWeeklyView={isWeeklyView} weeklyData={weeklySubjects} />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center min-h-[350px] bg-slate-950 rounded-lg">
+          <div className="text-center py-10 px-4">
+            <h2 className="text-xl font-semibold text-white mb-2">時間割を表示するには設定が必要です</h2>
+            <p className="text-gray-400 mb-6">所属コースと英語クラスを選択してください。</p>
+            <Link to="/setting" className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+              <span>設定ページへ</span>
+              <FiArrowRight />
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

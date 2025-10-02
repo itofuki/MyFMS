@@ -2,13 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
 import { useScheduledReloader } from "../hooks/useScheduledReloader";
-import { FiMaximize, FiMinimize, FiArrowRight } from "react-icons/fi";
-import { Timetable, type Day, type Subject } from '../components/Timetable';
-//import Assignments from '../components/Assignments';
+import { type IconType } from 'react-icons';
+import { FiCpu, FiWifi, FiGitPullRequest, FiPlay, FiFilm, FiHelpCircle, FiEdit, FiBookOpen} from "react-icons/fi";
+import { TimetableContainer, type Day, type Subject } from '../components/Timetable';
+import ChapterFrame from '../components/ChapterFrame';
+import StudyRoom from '../components/StudyRoom';
+import Assignments from '../components/Assignments';
+
 
 // =================================================================
 // 型定義と共通データ
@@ -37,6 +41,62 @@ type TimetableRpcData = {
   classroom: string;
 };
 
+type CourseStyle = {
+  icon: IconType;
+  label: string;
+  color: string;
+};
+
+const courseStyles: Record<string, CourseStyle> = {
+  'AI': {
+    icon: FiCpu,
+    label: 'AI',
+    color: 'text-purple-400',
+  },
+  'IoT': {
+    icon: FiWifi,
+    label: 'IoT',
+    color: 'text-sky-400',
+  },
+  'Robot': {
+    icon: FiGitPullRequest,
+    label: 'Robot',
+    color: 'text-orange-400',
+  },
+  'GAME': {
+    icon: FiPlay,
+    label: 'Game',
+    color: 'text-emerald-400',
+  },
+  'CG': {
+    icon: FiFilm,
+    label: 'CG',
+    color: 'text-amber-400',
+  },
+};
+
+// コース名から適切なスタイルを取得するヘルパー関数
+const getCourseStyle = (courseName: string): CourseStyle | null => {
+  if (!courseName) return null;
+  const lowerCaseCourseName = courseName.toLowerCase();
+  
+  // Object.keysを使ってキーの配列を取得し、findメソッドで一致するキーを探す
+  const matchedKey = Object.keys(courseStyles).find(key => 
+    lowerCaseCourseName.includes(key.toLowerCase())
+  );
+
+  // 一致するキーが見つかった場合、そのキーを使ってオブジェクトを返す
+  if (matchedKey) {
+    return courseStyles[matchedKey];
+  }
+  
+  return {
+    icon: FiHelpCircle,
+    label: '未選択',
+    color: 'text-slate-400',
+  };
+};
+
 
 // =================================================================
 // MyPageコンポーネント本体
@@ -48,6 +108,7 @@ export default function MyPage() {
   const myPageChapters: ChapterLink[] = [
     { id: 'timetable', label: '時間割' },
     { id: 'assignments', label: '課題' },
+    { id: 'study-room', label: '自習室' },
   ];
 
   // ▼▼▼ このページが表示された瞬間に、Layoutにチャプターリストを登録します ▼▼▼
@@ -185,46 +246,65 @@ export default function MyPage() {
     return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading...</div>;
   }
 
+  const generateDynamicTitle = () => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const mday = now.getDate();
+    const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
+    const wday = weekDays[now.getDay()];
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    let currentPeriodLabel: string | null = null;
+    for (const periodInfo of periodTimes) {
+      const startTime = new Date(now);
+      startTime.setHours(periodInfo.start.h, periodInfo.start.m, 0, 0);
+      
+      const endTime = new Date(now);
+      endTime.setHours(periodInfo.end.h, periodInfo.end.m, 0, 0);
+
+      if (now >= startTime && now <= endTime) {
+        currentPeriodLabel = `${periodInfo.period}限`;
+        break;
+      }
+    }
+
+    const baseTitle = `${month}/${mday}(${wday}) ${hours}:${minutes}`;
+    if (currentPeriodLabel) {
+      return `${baseTitle} (現在: ${currentPeriodLabel})`;
+    } else {
+      // 授業時間外の場合は、日付と時刻だけを返す
+      return baseTitle;
+    }
+  };
+
+  const courseStyle = getCourseStyle(courseName);
+
   const renderMainContent = () => {
     switch (activeChapter) {
       case 'timetable':
         return (
-            <div className="flex flex-col bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl rounded-lg">
-                <div className="w-full flex justify-between items-center px-4 md:px-6 py-4">
-                  <div className="flex items-baseline space-x-4">
-                    <h1 className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-2xl">
-                        {isWeeklyView ? "WEEKLY SCHEDULE" : "TODAY'S SCHEDULE"}
-                    </h1>
-                    <span className="text-base md:text-xl font-medium text-gray-300">{courseName || '未選択'}</span>
-                  </div>
-                  <button onClick={toggleTimetableView} className="text-gray-400 hover:text-cyan-400 transition-colors duration-300" aria-label="表示切替">
-                      {isWeeklyView ? <FiMinimize size={24} /> : <FiMaximize size={24} />}
-                  </button>
-                </div>
-                {isProfileSet ? (
-                  <div className="flex justify-center items-center min-h-[250px] md:min-h-[350px] bg-slate-950 rounded-lg pt-5 md:pt-6 pb-8 md:pb-10 px-2">
-                    <Timetable isWeeklyView={isWeeklyView} weeklyData={weeklySubjects} />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[300px] md:min-h-[350px] bg-slate-950 rounded-lg m-4">
-                    <div className="text-center py-10 px-4">
-                        <h2 className="text-xl font-semibold text-white mb-2">時間割を表示するには設定が必要です</h2>
-                        <p className="text-gray-400 mb-6">所属コースと英語クラスを選択してください。</p>
-                        <Link to="/setting" className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
-                            <span>設定ページへ</span>
-                            <FiArrowRight />
-                        </Link>
-                    </div>
-                </div>
-                )}
-            </div>
+          <TimetableContainer
+            isWeeklyView={isWeeklyView}
+            toggleTimetableView={toggleTimetableView}
+            dynamicTitle={generateDynamicTitle()}
+            courseName={courseName}
+            courseStyle={courseStyle}
+            isProfileSet={isProfileSet}
+            weeklySubjects={weeklySubjects}
+          />
         );
       case 'assignments':
         return (
-            <div className="flex flex-col items-center justify-center bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl rounded-lg w-full min-h-[350px]">
-                <h1 className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl mb-4">ASSIGNMENTS</h1>
-                <p className="text-gray-400">ここは課題表示エリアです。今後実装されます。</p>
-            </div>
+          <ChapterFrame title="課題" icon={FiEdit}>
+            <Assignments />
+          </ChapterFrame>
+        );
+      case 'study-room':
+        return (
+          <ChapterFrame title="自習室" icon={FiBookOpen}>
+            <StudyRoom />
+          </ChapterFrame>
         );
       default:
         return null;
