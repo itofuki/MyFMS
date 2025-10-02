@@ -34,7 +34,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white">
+    <div className="min-h-screen flex items-center justify-center text-white mx-2">
       <div className="w-full max-w-md p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
         <h2 className="text-3xl font-bold text-center mb-6 text-purple-400 drop-shadow-md">
           🔮 Login Form

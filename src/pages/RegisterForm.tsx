@@ -26,18 +26,15 @@ export default function RegisterForm() {
       });
 
       if (error) {
-        // エラーが発生した場合
         throw error;
       }
 
-      // 成功した場合
       toast.success("登録確認メールを送信しました。メールボックスをご確認ください。");
       console.log("ユーザー情報:", data.user);
       setEmail("");
       setPassword("");
 
     } catch (error) {
-      // エラー処理
       if (error instanceof Error) {
         toast.error(error.message);
       }
@@ -47,7 +44,7 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-white">
+    <div className="min-h-screen flex items-center justify-center text-white mx-2">
       <div className="w-full max-w-md p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
         <h2 className="text-3xl font-bold text-center mb-6 text-cyan-400 drop-shadow-md">
           🚀 Register Form

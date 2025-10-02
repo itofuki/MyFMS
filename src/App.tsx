@@ -1,6 +1,7 @@
 /* src/App.tsx */
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { SidebarProvider } from "./contexts/SidebarContext";
 import Layout from './components/Layout';
 import HomePage from "./pages/HomePage";
 import LoginForm from './pages/LoginForm';
@@ -38,5 +39,9 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <SidebarProvider>
+      <RouterProvider router={router} />
+    </SidebarProvider>
+  );
 }

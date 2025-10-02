@@ -93,14 +93,14 @@ export default function Setting() {
   if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white px-2 mt-20">
-      <div className="w-full max-w-2xl p-2 sm:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
+    <div className="min-h-screen flex flex-col items-center text-white px-2 pt-18 md:pt-20 pb-10">
+      <div className="w-full max-w-2xl px-3 py-5 md:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
 
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display pl-3 pt-6">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display pl-3 pt-3">
             設定
           </h1>
-          <Link to="/mypage" className="text-md text-cyan-400 hover:underline pr-3 pt-6">
+          <Link to="/mypage" className="text-md text-cyan-400 hover:underline pr-3 pt-3">
             マイページに戻る
           </Link>
         </div>
