@@ -1,3 +1,5 @@
+/* src/Dashboard.tsx */
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Assignments from './components/Assignments'; // 別ファイルから課題コンポーネントをインポート
@@ -272,12 +274,25 @@ const ChapterNavigation: React.FC<{
 export const Dashboard: React.FC<{ weeklyData: Record<Day, Subject[]> }> = ({ weeklyData }) => {
   const [activeChapter, setActiveChapter] = useState<Chapter>('timetable');
 
+    const uniqueSubjects = Object.values(weeklyData)
+    .flat() // 全曜日の授業を一つの配列にまとめる
+    .filter((subject, index, self) => 
+        // 同じ科目が複数あっても最初の一つだけを残す
+        index === self.findIndex(s => s.id.split('-')[0] === subject.id.split('-')[0])
+    )
+    .map(subject => ({
+        // Assignmentsコンポーネントが必要とする形式に変換
+        id: parseInt(subject.id.split('-')[0], 10),
+        name: subject.name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+
   const renderContent = () => {
     switch (activeChapter) {
       case 'timetable':
         return <TimetableContainer weeklyData={weeklyData} />;
       case 'assignments':
-        return <Assignments />;
+        return <Assignments subject={uniqueSubjects} />;
       default:
         return null;
     }

@@ -143,6 +143,17 @@ export default function MyPage() {
     setIsWeeklyView(prev => !prev);
   };
 
+  const uniqueSubjects = Object.values(weeklySubjects)
+    .flat()
+    .filter((subject, index, self) => 
+      index === self.findIndex(s => s.id.split('-')[0] === subject.id.split('-')[0])
+    )
+    .map(subject => ({
+      id: parseInt(subject.id.split('-')[0], 10), // subject_id (number)
+      name: subject.name, // subject_name
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+
   const reloadTimes = [
     { hour: 9, minute: 10 }, { hour: 10, minute: 50 }, { hour: 13, minute: 15 },
     { hour: 14, minute: 55 }, { hour: 16, minute: 35 }, { hour: 18, minute: 15 },
@@ -297,7 +308,7 @@ export default function MyPage() {
       case 'assignments':
         return (
           <ChapterFrame title="課題" icon={FiEdit}>
-            <Assignments />
+            <Assignments subject={uniqueSubjects} />
           </ChapterFrame>
         );
       case 'study-room':
