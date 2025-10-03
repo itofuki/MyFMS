@@ -284,16 +284,16 @@ export default function MyPage() {
     return (
       <span className="flex items-baseline">
         {/* --- 日付部分 --- */}
-        <span className="text-2xl md:text-3xl font-bold">{month}</span>
+        <span className="text-2xl md:text-4xl">{month}</span>
         <span className="text-base md:text-lg mx-0.5 md:mx-1">/</span>
-        <span className="text-2xl md:text-3xl font-bold">{mday}</span>
+        <span className="text-2xl md:text-4xl">{mday}</span>
         <span className="text-base md:text-xl ml-1">({wday})</span>
         
         {/* --- 時刻部分 --- */}
         <span className="ml-2 md:ml-4 flex items-baseline">
-          <span className="text-2xl md:text-3xl font-bold">{hours}</span>
+          <span className="text-2xl md:text-4xl">{hours}</span>
           <span className="text-base md:text-lg mx-0.5 md:mx-1">:</span>
-          <span className="text-2xl md:text-3xl font-bold">{minutes}</span>
+          <span className="text-2xl md:text-4xl">{minutes}</span>
         </span>
         
         {/* --- 時限部分 --- */}

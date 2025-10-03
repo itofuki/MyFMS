@@ -240,7 +240,7 @@ export const TimetableContainer: React.FC<TimetableContainerProps> = ({
             <span className="md:pt-1 text-lg md:text-2xl hidden sm:block">
               <courseStyle.icon />
             </span>
-            <span className="font-semibold text-lg md:text-2xl">
+            <span className="font-bold text-lg md:text-2xl">
               {courseStyle.label}
             </span>
             <span className="font-semibold text-xl hidden sm:block pt-1">
