@@ -280,13 +280,28 @@ export default function MyPage() {
       }
     }
 
-    const baseTitle = `${month}/${mday}(${wday}) ${hours}:${minutes}`;
-    if (currentPeriodLabel) {
-      return `${baseTitle} (現在: ${currentPeriodLabel})`;
-    } else {
-      // 授業時間外の場合は、日付と時刻だけを返す
-      return baseTitle;
-    }
+    // 文字列の代わりにJSXを返し、各部分にスタイルを適用します
+    return (
+      <span className="flex items-baseline">
+        {/* --- 日付部分 --- */}
+        <span className="text-2xl md:text-3xl font-bold">{month}</span>
+        <span className="text-base md:text-lg mx-0.5 md:mx-1">/</span>
+        <span className="text-2xl md:text-3xl font-bold">{mday}</span>
+        <span className="text-base md:text-xl ml-1">({wday})</span>
+        
+        {/* --- 時刻部分 --- */}
+        <span className="ml-2 md:ml-4 flex items-baseline">
+          <span className="text-2xl md:text-3xl font-bold">{hours}</span>
+          <span className="text-base md:text-lg mx-0.5 md:mx-1">:</span>
+          <span className="text-2xl md:text-3xl font-bold">{minutes}</span>
+        </span>
+        
+        {/* --- 時限部分 --- */}
+        {currentPeriodLabel && (
+          <span className="text-base md:text-xl ml-1">({currentPeriodLabel})</span>
+        )}
+      </span>
+    );
   };
 
   const courseStyle = getCourseStyle(courseName);

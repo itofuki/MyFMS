@@ -213,7 +213,7 @@ const TimetableDisplay: React.FC<TimetableDisplayProps> = ({ isWeeklyView, weekl
 interface TimetableContainerProps {
   isWeeklyView: boolean;
   toggleTimetableView: () => void;
-  dynamicTitle: string;
+  dynamicTitle: React.ReactNode;
   courseName: string;
   courseStyle: {
     icon: IconType;
@@ -237,7 +237,7 @@ export const TimetableContainer: React.FC<TimetableContainerProps> = ({
       <div className="relative w-full flex justify-center items-center h-15 md:h-18 px-2 sm:px-6 border-b border-slate-700">
         {courseStyle && (
           <div className={`absolute left-4 sm:left-6 flex items-center gap-1 md:gap-2 ${courseStyle.color}`}>
-            <span className="md:pt-1 text-lg md:text-2xl">
+            <span className="md:pt-1 text-lg md:text-2xl hidden sm:block">
               <courseStyle.icon />
             </span>
             <span className="font-semibold text-lg md:text-2xl">
