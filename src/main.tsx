@@ -7,13 +7,17 @@ import './index.css'
 
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, createTheme } from '@mantine/core';
 // ▲▲▲ ここまで ▲▲▲
+
+const theme = createTheme({
+  fontFamily: '"Noto Sans JP", sans-serif',
+});
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {/* ▼▼▼ MantineProviderでAppコンポーネント全体を囲みます ▼▼▼ */}
-    <MantineProvider defaultColorScheme="dark">
+    <MantineProvider defaultColorScheme="dark" theme={theme}>
       <App />
     </MantineProvider>
     {/* ▲▲▲ ここまで ▲▲▲ */}
