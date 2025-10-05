@@ -173,19 +173,19 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                   <p className={`font-semibold truncate ${assignment.done ? 'text-slate-500 line-through' : 'text-slate-100'}`}>{assignment.name}</p>
                   
                   <div className={`
-                    flex items-center justify-between 
+                    flex items-center 
                     md:justify-start md:gap-2 
                     text-xs md:text-sm
                     ${assignment.done ? 'text-slate-600' : 'text-slate-400'}`}>
                     
                     {/* モバイル表示時の左半分 */}
-                    <span className="w-1/2 flex items-center gap-1 mr-3 md:w-auto">
+                    <span className="flex items-center gap-1 mr-3 md:w-auto">
                       <FiCalendar size={14} />
                       <span className="truncate">{formatDateTime(assignment.deadline)}</span>
                     </span>
                     
                     {/* モバイル表示時の右半分 */}
-                    <span className="w-1/2 truncate justify-end md:w-auto mr-5">
+                    <span className="truncate md:w-auto">
                       {assignment.subject?.name || '未分類'}
                     </span>
                   </div>
