@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { FiPlus, FiTrash2, FiCalendar, FiInbox } from 'react-icons/fi';
+import ChapterFrame from './ChapterFrame'; 
+import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiEdit, FiTool } from 'react-icons/fi';
 import { format } from 'date-fns'; // format関数をインポート
 
 // Mantineのコンポーネントをインポート
@@ -26,7 +27,6 @@ interface AssignmentsProps {
   subject: Subject[];
 }
 
-// 日付フォーマット用のヘルパー関数
 const formatDateTime = (isoString: string) => {
   if (!isoString) return '';
   const date = new Date(isoString);
@@ -41,11 +41,53 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   const theme = useMantineTheme();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('user');
+  const [isAdminMode, setIsAdminMode] = useState(false);
 
   const [newName, setNewName] = useState('');
   const [newDate, setNewDate] = useState<string | null>(null);
   const [newTime, setNewTime] = useState('');
   const [newSubjectId, setNewSubjectId] = useState<string | null>(null);
+
+  const fetchAssignments = async () => {
+    const { data, error } = await supabase
+      .from('assignment')
+      .select('id, name, deadline, done, subject(name)')
+      .order('done', { ascending: true })
+      .order('deadline', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching assignments:', error);
+    } else if (data) {
+      setAssignments(data as unknown as Assignment[]);
+    }
+  };
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profile') 
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user role:', profileError);
+        } else if (profileData) {
+          setUserRole(profileData.role);
+        }
+      }
+
+      await fetchAssignments();
+      setLoading(false);
+    };
+
+    fetchInitialData();
+  }, []);
 
   const getDayProps = (dateString: string): Partial<DayProps> => {
     const [year, month, day] = dateString.split('-').map(Number);
@@ -61,26 +103,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }
     return { style: styles };
   };
-
-  // 課題データを取得する関数
-  const fetchAssignments = async () => {
-    const { data, error } = await supabase
-      .from('assignment')
-      .select('id, name, deadline, done, subject(name)')
-      .order('done', { ascending: true })
-      .order('deadline', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching assignments:', error);
-    } else if (data) {
-      setAssignments(data as unknown as Assignment[]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchAssignments();
-  }, []);
 
   // 課題を追加する処理
   const handleAddAssignment = async (e: React.FormEvent) => {
@@ -122,10 +144,11 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     if (error) {
       console.error('Error updating assignment:', error);
     } else {
+      // 完了状態の切り替えはUIの応答性を優先してローカルで更新
       setAssignments(prev =>
         prev.map(assign =>
           assign.id === id ? { ...assign, done: !currentStatus } : assign
-        )
+        ).sort((a, b) => Number(a.done) - Number(b.done) || new Date(a.deadline).getTime() - new Date(b.deadline).getTime()) // ソート順を維持
       );
     }
   };
@@ -147,8 +170,46 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   if (loading) return <p className="text-slate-400 text-center py-10">読み込み中...</p>;
 
   return (
-    <div className="w-full flex flex-col gap-8 md:px-10 pt-2 pb-2">
-      {/* --- 課題一覧エリア --- */}
+    <ChapterFrame
+      title={
+        <>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
+            <FiEdit className="text-cyan-400 text-2xl sm:text-3xl" />
+            <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
+              課題
+            </span>
+          </div>
+
+          {userRole === 'admin' && (
+            <div className="absolute top-1/2 right-1 -translate-y-1/2">
+              <Button
+                onClick={() => setIsAdminMode(prev => !prev)}
+                variant="outline"
+                color={isAdminMode ? "cyan" : "yellow"}
+                size="sm"
+              >
+                <div className="flex items-center justify-center">
+                  <FiTool size={16} />
+                  <span className="hidden sm:inline ml-2">
+                    {isAdminMode ? '通常モード' : '管理者モード'}
+                  </span>
+                </div>
+              </Button>
+            </div>
+          )}
+        </>
+      }
+    >
+      {isAdminMode && userRole === 'admin' ? (
+        // 管理者モードの表示
+        <div className="flex items-center justify-center w-full h-96 bg-slate-800/50 rounded-lg">
+          <p className="text-slate-300 text-xl font-bold">
+            管理者モードです
+          </p>
+        </div>
+      ) : (
+        <div className="w-full flex flex-col gap-8 md:px-10 pt-2 pb-2">
+          {/* --- 課題一覧エリア --- */}
       <div>
         {assignments.length === 0 ? (
           <div className="text-center py-16 px-4 bg-slate-800/50 rounded-lg">
@@ -175,7 +236,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                   <div className={`
                     flex items-center 
                     md:justify-start md:gap-2 
-                    text-xs md:text-sm
+                    text-xs md:text-sm 
                     ${assignment.done ? 'text-slate-600' : 'text-slate-400'}`}>
                     
                     {/* モバイル表示時の左半分 */}
@@ -247,6 +308,8 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
         </form>
       </div>
     </div>
+      )}
+    </ChapterFrame>
   );
 };
 

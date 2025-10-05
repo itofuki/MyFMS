@@ -7,9 +7,8 @@ import type { User } from "@supabase/supabase-js";
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
 import { useScheduledReloader } from "../hooks/useScheduledReloader";
 import { type IconType } from 'react-icons';
-import { FiCpu, FiWifi, FiGitPullRequest, FiPlay, FiFilm, FiHelpCircle, FiEdit, FiBookOpen} from "react-icons/fi";
+import { FiCpu, FiWifi, FiGitPullRequest, FiPlay, FiFilm, FiHelpCircle } from "react-icons/fi";
 import { TimetableContainer, type Day, type Subject } from '../components/Timetable';
-import ChapterFrame from '../components/ChapterFrame';
 import StudyRoom from '../components/StudyRoom';
 import Assignments from '../components/Assignments';
 
@@ -322,15 +321,11 @@ export default function MyPage() {
         );
       case 'assignments':
         return (
-          <ChapterFrame title="課題" icon={FiEdit}>
-            <Assignments subject={uniqueSubjects} />
-          </ChapterFrame>
+          <Assignments subject={uniqueSubjects} />
         );
       case 'study-room':
         return (
-          <ChapterFrame title="自習室" icon={FiBookOpen}>
-            <StudyRoom />
-          </ChapterFrame>
+          <StudyRoom />
         );
       default:
         return null;

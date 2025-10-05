@@ -3,7 +3,7 @@ import type { IconType } from 'react-icons';
 
 // このコンポーネントが受け取るpropsの型を定義
 interface ChapterFrameProps {
-  title: string;
+  title: React.ReactNode;
   icon?: IconType; // アイコンは任意 (あってもなくても良い)
   children: React.ReactNode; // 中に表示するコンテンツ
 }
@@ -14,12 +14,15 @@ const ChapterFrame: React.FC<ChapterFrameProps> = ({ title, icon: Icon, children
     <div className="flex flex-col bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl rounded-lg w-full overflow-hidden">
       
       {/* ヘッダー部分 */}
-      <div className="flex justify-center items-center h-15 md:h-18 px-4 sm:px-6 border-b border-slate-700">
-        <div className="flex items-center gap-3">
-          {Icon && <Icon className="text-cyan-400 text-xl sm:text-4xl" />}
-          <h1 className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
-            {title}
-          </h1>
+      <div className="flex items-center h-16 px-4 sm:px-6 border-b border-slate-700">
+        <div className="flex items-center gap-3 w-full">
+          
+          {Icon && <Icon className="text-cyan-400 text-2xl sm:text-3xl flex-shrink-0" />}
+          
+          <h1 className="font-orbitron font-bold text-cyan-300 text-glow w-full relative">
+          {title}
+        </h1>
+
         </div>
       </div>
 
