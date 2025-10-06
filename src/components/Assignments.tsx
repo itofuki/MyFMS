@@ -16,7 +16,7 @@ type Assignment = {
   done: boolean;
   classification: 'official' | 'individual'; // 課題の種別
   user_id: string | null; // individual課題の所有者
-  subject: { name: string } | null;
+  subject_name: string | null;
 };
 
 type Subject = { id: number; name: string };
@@ -25,7 +25,6 @@ interface AssignmentsProps {
   subject: Subject[];
 }
 
-// --- ヘルパー関数 ---
 const formatDateTime = (isoString: string) => {
   if (!isoString) return '';
   const date = new Date(isoString);
@@ -52,23 +51,14 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   const [newSubjectId, setNewSubjectId] = useState<string | null>(null);
 
   // --- データ取得 ---
-  const fetchAssignments = async (user: User | null) => {
-    if (!user) {
-      setAssignments([]);
-      return;
-    }
-    // official課題、または自分が作成したindividual課題を取得
-    const { data, error } = await supabase
-      .from('assignment')
-      .select('id, name, deadline, done, classification, user_id, subject(name)')
-      .or(`classification.eq.official,and(classification.eq.individual,user_id.eq.${user.id})`)
-      .order('done', { ascending: true })
-      .order('deadline', { ascending: true });
+  const fetchAssignments = async () => {
+    const { data, error } = await supabase.rpc('get_user_assignments');
 
     if (error) {
       console.error('Error fetching assignments:', error);
+      setAssignments([]);
     } else if (data) {
-      setAssignments(data as unknown as Assignment[]);
+      setAssignments(data as Assignment[]);
     }
   };
 
@@ -79,18 +69,11 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       setCurrentUser(user);
 
       if (user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profile')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-        if (profileError) {
-          console.error('Error fetching user role:', profileError);
-        } else if (profileData) {
-          setUserRole(profileData.role);
-        }
+        const { data: profileData } = await supabase
+          .from('profile').select('role').eq('user_id', user.id).single();
+        if (profileData) setUserRole(profileData.role);
       }
-      await fetchAssignments(user);
+      await fetchAssignments(); // RPCを呼び出す
       setLoading(false);
     };
     fetchInitialData();
@@ -141,42 +124,42 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     if (error) {
       console.error('Error adding assignment:', error);
     } else {
-      setNewName('');
-      setNewDate(null);
-      setNewTime('');
-      setNewSubjectId(null);
-      await fetchAssignments(currentUser);
+      await fetchAssignments();
     }
   };
 
-  const handleToggleDone = async (id: number, currentStatus: boolean) => {
+  const handleToggleDone = async (assignmentId: number, currentStatus: boolean) => {
+    if (!currentUser) return;
+
+    const newStatus = !currentStatus;
+
+    // UIを即時反映
+    setAssignments(prev => prev.map(assign => 
+      assign.id === assignmentId ? { ...assign, done: !currentStatus } : assign
+    ));
+
     const { error } = await supabase
-      .from('assignment')
-      .update({ done: !currentStatus })
-      .eq('id', id);
+    .from('assignment_status')
+    .upsert({ 
+      user_id: currentUser.id, 
+      assignment_id: assignmentId,
+      done: newStatus 
+    }, {
+      onConflict: 'user_id, assignment_id'
+    });
 
     if (error) {
-      console.error('Error updating assignment:', error);
-    } else {
-      setAssignments(prev =>
-        prev.map(assign =>
-          assign.id === id ? { ...assign, done: !currentStatus } : assign
-        ).sort((a, b) => Number(a.done) - Number(b.done) || new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-      );
+      console.error('Error updating status:', error);
+      // エラーが起きたらUIを元に戻す
+      setAssignments(prev => prev.map(assign => 
+        assign.id === assignmentId ? { ...assign, done: currentStatus } : assign
+      ));
     }
   };
   
   const handleDeleteAssignment = async (id: number) => {
-    const { error } = await supabase
-      .from('assignment')
-      .delete()
-      .eq('id', id);
-
-    if(error) {
-      console.error('Error deleting assignment:', error);
-    } else {
-      await fetchAssignments(currentUser);
-    }
+    await supabase.from('assignment').delete().eq('id', id);
+    await fetchAssignments(); // 再取得
   };
 
   const getAssignmentStyles = (assignment: Assignment): string => {
@@ -193,11 +176,20 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
   // --- 表示用データ生成 ---
   const displayedAssignments = useMemo(() => {
+
+    const enrolledSubjectNames = subject.map(s => s.name);
+
+    const filteredBySubject = assignments.filter(assignment => 
+      !assignment.subject_name || enrolledSubjectNames.includes(assignment.subject_name)
+    );
+
     if (isAdminMode && userRole === 'admin') {
-      return assignments.filter(a => a.classification === 'official');
+      return filteredBySubject.filter(a => a.classification === 'official');
     }
-    return assignments;
-  }, [assignments, isAdminMode, userRole]);
+
+    return filteredBySubject;
+
+  }, [assignments, isAdminMode, userRole, subject]);
 
 
   if (loading) return <p className="text-slate-400 text-center py-10">読み込み中...</p>;
@@ -249,7 +241,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
           ) : (
             <div className="space-y-3">
               {displayedAssignments.map(assignment => {
-                const canModify = (isAdminMode && userRole === 'admin') || 
+                const canDelete = (isAdminMode && userRole === 'admin') || 
                                   (assignment.classification === 'individual' && assignment.user_id === currentUser?.id);
 
                 return (
@@ -262,7 +254,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                         checked={assignment.done}
                         onChange={() => handleToggleDone(assignment.id, assignment.done)}
                         size="md"
-                        disabled={!canModify}
                       />
                       <div className="ml-4 w-full min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -274,13 +265,13 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                             <span>{formatDateTime(assignment.deadline)}</span>
                           </span>
                           <span className="block truncate">
-                            {assignment.subject?.name || '未分類'}
+                            {assignment.subject_name || '未分類'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    {canModify && (
-                      <button onClick={() => handleDeleteAssignment(assignment.id)} className="text-slate-500 hover:text-red-500 transition-colors ml-2">
+                    {canDelete && (
+                      <button onClick={() => handleDeleteAssignment(assignment.id)} className="...">
                         <FiTrash2 size={18}/>
                       </button>
                     )}
