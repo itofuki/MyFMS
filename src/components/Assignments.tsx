@@ -123,10 +123,17 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   };
 
   const handleDeleteAssignment = async (id: number) => {
-    const { error } = await supabase.rpc('delete_assignment', { target_id: id });
-    if (error) { console.error('Error deleting assignment:', error); } 
-    else { setAssignments(prev => prev.filter(a => a.id !== id)); }
-  };
+    const { error } = await supabase
+      .from('assignment')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting assignment:', error);
+    } else {
+      setAssignments(prev => prev.filter(a => a.id !== id));
+    }
+ };
 
   const getAssignmentStyles = (assignment: Assignment): string => {
     if (assignment.classification === 'official') {
