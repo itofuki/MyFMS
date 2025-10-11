@@ -186,7 +186,7 @@ const TimetableDisplay: React.FC<TimetableDisplayProps> = ({ isWeeklyView, weekl
   const getTodayDay = (date: Date): Day => {
     const dayIndex = date.getDay();
     const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    return days[dayIndex - 1] || '';
+    return days[dayIndex - 1] || 'Mon';
   };
 
   const today = getTodayDay(currentTime);
