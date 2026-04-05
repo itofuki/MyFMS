@@ -26,13 +26,13 @@ export default function Setting() {
   ];
 
   const englishClassOptions = [
-    { value: 3418, label: 'A' },
-    { value: 3419, label: 'B' },
-    { value: 3420, label: 'C' },
-    { value: 3421, label: 'D' },
-    { value: 3422, label: 'E' },
-    { value: 3423, label: 'F' },
-    { value: 3424, label: 'G' },
+    { value: 3803, label: 'A' },
+    { value: 3804, label: 'B' },
+    { value: 3805, label: 'C' },
+    { value: 3806, label: 'D' },
+    { value: 3807, label: 'E' },
+    { value: 3808, label: 'F' },
+    { value: 3809, label: 'G' },
   ];
 
   useEffect(() => {
