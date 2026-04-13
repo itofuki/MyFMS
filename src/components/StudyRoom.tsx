@@ -15,7 +15,7 @@ const StudyRoom = () => {
   const firstDayOfWeek = firstDayOfMonth.getDay();
 
   const weekOfMonth = Math.ceil((mday + firstDayOfWeek) / 7) - 1;
-  const imageName = `${month + 1}.${weekOfMonth}.webp`;
+  const imageName = `${month + 1}.${weekOfMonth}.png`;
   
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -34,7 +34,7 @@ const StudyRoom = () => {
       if (error) {
         console.error('画像の取得に失敗しました:', error.message);
         // エラー時のフォールバック画像のパスを指定（任意）
-        setImagePath('/images/fallback-image.webp');
+        setImagePath('/images/fallback-image.png');
       } else if (data) {
         setImagePath(data.signedUrl);
       }
