@@ -167,8 +167,6 @@ export default function MyPage() {
         
         // 🌟 修正ポイント：データが配列でもオブジェクトでも確実に取り出せるようにする 🌟
         let courseNameValue = null;
-
-        console.log("【デバッグ】Supabaseから取得したプロフィールデータ:", profileData);
         
         if (profileData && profileData.classes) {
           // classes が配列なら最初の要素を、オブジェクトならそのまま使う
@@ -180,8 +178,6 @@ export default function MyPage() {
             courseNameValue = crs?.name;
           }
         }
-
-        console.log("【デバッグ】抽出したコース名:", courseNameValue);
         
         // 取り出したコース名（'AI' や 'IoT' など）をセット
         if (courseNameValue) {

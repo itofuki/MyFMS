@@ -61,7 +61,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
       if (user) {
-        const { data: profileData } = await supabase.from('profile').select('role').eq('user_id', user.id).single();
+        const { data: profileData } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
         if (profileData) setUserRole(profileData.role);
       }
       await fetchAssignments();
