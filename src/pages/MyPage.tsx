@@ -12,7 +12,6 @@ import { TimetableContainer, type Day, type Subject } from '../components/Timeta
 import StudyRoom from '../components/StudyRoom';
 import Assignments from '../components/Assignments';
 
-
 // =================================================================
 // 型定義と共通データ
 // =================================================================
@@ -47,44 +46,22 @@ type CourseStyle = {
 };
 
 const courseStyles: Record<string, CourseStyle> = {
-  'AI': {
-    icon: FiCpu,
-    label: 'AI',
-    color: 'text-purple-400',
-  },
-  'IoT': {
-    icon: FiWifi,
-    label: 'IoT',
-    color: 'text-sky-400',
-  },
-  'Robot': {
-    icon: FiGitPullRequest,
-    label: 'Robot',
-    color: 'text-orange-400',
-  },
-  'GAME': {
-    icon: FiPlay,
-    label: 'Game',
-    color: 'text-emerald-400',
-  },
-  'CG': {
-    icon: FiFilm,
-    label: 'CG',
-    color: 'text-amber-400',
-  },
+  'IA': { icon: FiCpu, label: 'AI', color: 'text-purple-400' },
+  'IS': { icon: FiWifi, label: 'IoT', color: 'text-sky-400' },
+  'IR': { icon: FiGitPullRequest, label: 'Robot', color: 'text-orange-400' },
+  'DL': { icon: FiHelpCircle, label: 'Planner', color: 'text-pink-400' },
+  'DG': { icon: FiPlay, label: 'Programmer', color: 'text-emerald-400' },
+  'DC': { icon: FiFilm, label: 'CG', color: 'text-amber-400' },
 };
 
-// コース名から適切なスタイルを取得するヘルパー関数
 const getCourseStyle = (courseName: string): CourseStyle | null => {
   if (!courseName) return null;
   const lowerCaseCourseName = courseName.toLowerCase();
   
-  // Object.keysを使ってキーの配列を取得し、findメソッドで一致するキーを探す
   const matchedKey = Object.keys(courseStyles).find(key => 
     lowerCaseCourseName.includes(key.toLowerCase())
   );
 
-  // 一致するキーが見つかった場合、そのキーを使ってオブジェクトを返す
   if (matchedKey) {
     return courseStyles[matchedKey];
   }
@@ -95,7 +72,6 @@ const getCourseStyle = (courseName: string): CourseStyle | null => {
     color: 'text-slate-400',
   };
 };
-
 
 // =================================================================
 // MyPageコンポーネント本体
@@ -110,23 +86,16 @@ export default function MyPage() {
     { id: 'study-room', label: '自習室' },
   ];
 
-  // ▼▼▼ このページが表示された瞬間に、Layoutにチャプターリストを登録します ▼▼▼
   useEffect(() => {
-    // Layoutにチャプターリストを渡す
     setChapterLinks(myPageChapters);
-    // 初期表示するチャプターを設定
     if (!activeChapter) {
       setActiveChapter('timetable');
     }
-
-    // このページから離れるときに、Layoutのチャプターリストを空にする（クリーンアップ処理）
-    // これにより、他のページではサイドバーが表示されなくなります。
     return () => {
       setChapterLinks([]);
       setActiveChapter('');
     };
   }, [setChapterLinks, setActiveChapter]);
-
 
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -148,8 +117,8 @@ export default function MyPage() {
       index === self.findIndex(s => s.id.split('-')[0] === subject.id.split('-')[0])
     )
     .map(subject => ({
-      id: parseInt(subject.id.split('-')[0], 10), // subject_id (number)
-      name: subject.name, // subject_name
+      id: parseInt(subject.id.split('-')[0], 10),
+      name: subject.name,
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
@@ -173,7 +142,15 @@ export default function MyPage() {
       setUser(user);
       const [timetableRes, profileRes] = await Promise.all([
         supabase.rpc('get_user_timetable', { p_user_id: user.id }),
-        supabase.from("profile").select("auto_open, course(name)").eq("user_id", user.id).single()
+        // profiles -> classes -> courses を辿って名前を取得！
+        supabase.from("profiles").select(`
+          auto_open,
+          classes (
+            courses (
+              name
+            )
+          )
+        `).eq("user_id", user.id).single()
       ]);
       
       if (timetableRes.error) {
@@ -187,7 +164,26 @@ export default function MyPage() {
         setIsProfileSet(false);
       } else {
         const profileData = profileRes.data as any;
-        const courseNameValue = profileData?.course?.name;
+        
+        // 🌟 修正ポイント：データが配列でもオブジェクトでも確実に取り出せるようにする 🌟
+        let courseNameValue = null;
+
+        console.log("【デバッグ】Supabaseから取得したプロフィールデータ:", profileData);
+        
+        if (profileData && profileData.classes) {
+          // classes が配列なら最初の要素を、オブジェクトならそのまま使う
+          const cls = Array.isArray(profileData.classes) ? profileData.classes[0] : profileData.classes;
+          
+          if (cls && cls.courses) {
+            // courses も同様に処理
+            const crs = Array.isArray(cls.courses) ? cls.courses[0] : cls.courses;
+            courseNameValue = crs?.name;
+          }
+        }
+
+        console.log("【デバッグ】抽出したコース名:", courseNameValue);
+        
+        // 取り出したコース名（'AI' や 'IoT' など）をセット
         if (courseNameValue) {
           setCourseName(courseNameValue);
           setIsProfileSet(true);
@@ -195,6 +191,7 @@ export default function MyPage() {
           setCourseName("コース未設定");
           setIsProfileSet(false);
         }
+        
         setAutoOpenEnabled(profileData?.auto_open ?? false);
       }
 
@@ -279,23 +276,17 @@ export default function MyPage() {
       }
     }
 
-    // 文字列の代わりにJSXを返し、各部分にスタイルを適用します
     return (
       <span className="flex items-baseline">
-        {/* --- 日付部分 --- */}
         <span className="text-2xl md:text-4xl">{month}</span>
         <span className="text-base md:text-lg mx-0.5 md:mx-1">/</span>
         <span className="text-2xl md:text-4xl">{mday}</span>
         <span className="text-base md:text-xl ml-1">({wday})</span>
-        
-        {/* --- 時刻部分 --- */}
         <span className="ml-2 md:ml-4 flex items-baseline">
           <span className="text-2xl md:text-4xl">{hours}</span>
           <span className="text-base md:text-lg mx-0.5 md:mx-1">:</span>
           <span className="text-2xl md:text-4xl">{minutes}</span>
         </span>
-        
-        {/* --- 時限部分 --- */}
         {currentPeriodLabel && (
           <span className="text-base md:text-xl ml-1">({currentPeriodLabel})</span>
         )}
@@ -320,13 +311,9 @@ export default function MyPage() {
           />
         );
       case 'assignments':
-        return (
-          <Assignments subject={uniqueSubjects} />
-        );
+        return <Assignments subject={uniqueSubjects} />;
       case 'study-room':
-        return (
-          <StudyRoom />
-        );
+        return <StudyRoom />;
       default:
         return null;
     }
