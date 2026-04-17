@@ -15,7 +15,7 @@ const StudyRoom = () => {
   const firstDayOfWeek = firstDayOfMonth.getDay();
 
   const weekOfMonth = Math.ceil((mday + firstDayOfWeek) / 7) - 1;
-  const imageName = `${month + 1}.${weekOfMonth}.png`;
+  const imageName = `${month + 1}.${weekOfMonth}.webp`;
   
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
