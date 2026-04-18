@@ -97,7 +97,7 @@ const AdminStudyRoom = () => {
       if (urlError) throw urlError;
 
       setMessage('3/3: AI（Gemini）で画像を解析・DB登録中...');
-      const { data: functionData, error: functionError } = await supabase.functions.invoke('process-schedule-image', {
+      const { error: functionError } = await supabase.functions.invoke('process-schedule-image', {
         body: { 
           imageUrl: urlData.signedUrl,
           year: new Date().getFullYear()
