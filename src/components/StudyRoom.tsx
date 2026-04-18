@@ -18,8 +18,11 @@ const StudyRoom = () => {
   const [todaySchedule, setTodaySchedule] = useState<Record<number, RoomSchedule> | null>(null);
   const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
 
+  // ★ 曜日の配列を用意し、今日の日付に組み込む
   const today = new Date();
-  const displayDate = `${today.getMonth() + 1}月${today.getDate()}日`;
+  const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayOfWeek = daysOfWeek[today.getDay()];
+  const displayDate = `${today.getMonth() + 1}月${today.getDate()}日(${dayOfWeek})`;
 
   const calculateCurrentPeriod = (now: Date) => {
     const hours = now.getHours();
@@ -74,7 +77,10 @@ const StudyRoom = () => {
 
       if (error) {
         console.error('DBからのスケジュール取得に失敗しました:', error.message);
-      } else if (data && data.length > 0) {
+        // ★ エラーの時も永遠にローディングにならないように空をセット
+        setTodaySchedule({}); 
+      } else if (data) {
+        // ★ 取得したデータが0件（土日など）でも、空のオブジェクトをセットして読み込み完了扱いにする
         const formattedSchedule: Record<number, RoomSchedule> = {};
         data.forEach((row) => {
           formattedSchedule[row.period] = {
@@ -89,7 +95,7 @@ const StudyRoom = () => {
     fetchSignedUrl();
     fetchTodaySchedule();
     
-    // ★ 3. 画面を開いた時の時間を1回だけセットする処理（自動更新なし）
+    // 3. 画面を開いた時の時間を1回だけセットする処理
     const initClock = () => {
       const now = new Date();
       const hours = String(now.getHours()).padStart(2, '0');
@@ -100,8 +106,6 @@ const StudyRoom = () => {
     };
 
     initClock();
-    // 自動更新（setInterval）は削除しました
-    
   }, []);
 
   const currentRooms = currentPeriod && todaySchedule ? todaySchedule[currentPeriod] : null;
@@ -125,7 +129,7 @@ const StudyRoom = () => {
             <h3 className="text-xl font-bold tracking-wider">
               {displayDate} {currentTimeStr} 
               <span className="ml-2 text-cyan-100">
-                {currentPeriod ? `(${currentPeriod}限)` : '(授業時間外)'}
+                {currentPeriod ? `(${currentPeriod}限)` : ''}
               </span>
             </h3>
           </div>
