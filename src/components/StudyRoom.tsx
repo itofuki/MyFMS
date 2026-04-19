@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ChapterFrame from './ChapterFrame';
-import { FiBookOpen, FiClock } from 'react-icons/fi';
+import { FiBookOpen } from 'react-icons/fi';
 import { supabase } from '../lib/supabaseClient';
 import AdminStudyRoom from './AdminStudyRoom';
 
@@ -14,15 +14,18 @@ interface RoomSchedule {
 const StudyRoom = () => {
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentPeriod, setCurrentPeriod] = useState<number | null>(null);
   const [todaySchedule, setTodaySchedule] = useState<Record<number, RoomSchedule> | null>(null);
-  const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
+  
+  // ★ 時間割(Timetable)と同じく、1分ごとに更新される時間ステート
+  const [currentTime, setCurrentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
 
-  // ★ 曜日の配列を用意し、今日の日付に組み込む
-  const today = new Date();
-  const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
-  const dayOfWeek = daysOfWeek[today.getDay()];
-  const displayDate = `${today.getMonth() + 1}月${today.getDate()}日(${dayOfWeek})`;
+  // 1分ごとに時間を更新
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const calculateCurrentPeriod = (now: Date) => {
     const hours = now.getHours();
@@ -37,6 +40,8 @@ const StudyRoom = () => {
     if (time >= 1810) return 6;
     return null;
   };
+
+  const currentPeriod = calculateCurrentPeriod(currentTime);
 
   useEffect(() => {
     // 1. スケジュール画像（全体像）を取得
@@ -77,10 +82,8 @@ const StudyRoom = () => {
 
       if (error) {
         console.error('DBからのスケジュール取得に失敗しました:', error.message);
-        // ★ エラーの時も永遠にローディングにならないように空をセット
         setTodaySchedule({}); 
       } else if (data) {
-        // ★ 取得したデータが0件（土日など）でも、空のオブジェクトをセットして読み込み完了扱いにする
         const formattedSchedule: Record<number, RoomSchedule> = {};
         data.forEach((row) => {
           formattedSchedule[row.period] = {
@@ -94,21 +97,17 @@ const StudyRoom = () => {
 
     fetchSignedUrl();
     fetchTodaySchedule();
-    
-    // 3. 画面を開いた時の時間を1回だけセットする処理
-    const initClock = () => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      
-      setCurrentTimeStr(`${hours}:${minutes}`);
-      setCurrentPeriod(calculateCurrentPeriod(now));
-    };
-
-    initClock();
   }, []);
 
   const currentRooms = currentPeriod && todaySchedule ? todaySchedule[currentPeriod] : null;
+
+  // ★ 時間割画面と同じ表示用の変数を準備
+  const month = currentTime.getMonth() + 1;
+  const mday = currentTime.getDate();
+  const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
+  const wday = weekDays[currentTime.getDay()];
+  const hours = String(currentTime.getHours()).padStart(2, '0');
+  const minutes = String(currentTime.getMinutes()).padStart(2, '0');
 
   return (
     <ChapterFrame
@@ -121,15 +120,25 @@ const StudyRoom = () => {
         </div>
       }
     >
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-center p-2">
         
         <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
-          <div className="flex items-center justify-center gap-3 mb-4 text-cyan-300">
-            <FiClock className="text-2xl" />
-            <h3 className="text-xl font-bold tracking-wider">
-              {displayDate} {currentTimeStr} 
-              <span className="ml-2 text-cyan-100">
-                {currentPeriod ? `(${currentPeriod}限)` : ''}
+          <div className="flex items-center justify-center mb-6 text-cyan-300">
+            {/* ★ ここを時間割と同じ、スタイリッシュなベースライン揃えのデザインに変更 */}
+            <h3 className="font-bold text-glow">
+              <span className="flex items-baseline justify-center">
+                <span className="text-2xl md:text-4xl">{month}</span>
+                <span className="text-base md:text-lg mx-0.5 md:mx-1">/</span>
+                <span className="text-2xl md:text-4xl">{mday}</span>
+                <span className="text-base md:text-xl ml-1">({wday})</span>
+                <span className="ml-2 md:ml-4 flex items-baseline">
+                  <span className="text-2xl md:text-4xl">{hours}</span>
+                  <span className="text-base md:text-lg mx-0.5 md:mx-1">:</span>
+                  <span className="text-2xl md:text-4xl">{minutes}</span>
+                </span>
+                <span className="text-base md:text-xl ml-2 text-cyan-100">
+                  {currentPeriod ? `(${currentPeriod}限)` : '(授業時間外)'}
+                </span>
               </span>
             </h3>
           </div>
