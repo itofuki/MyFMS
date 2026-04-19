@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
 import { useScheduledReloader } from "../hooks/useScheduledReloader";
@@ -77,25 +77,48 @@ const getCourseStyle = (courseName: string): CourseStyle | null => {
 // MyPageコンポーネント本体
 // =================================================================
 
+const myPageChapters: ChapterLink[] = [
+  { id: 'timetable', label: '時間割' },
+  { id: 'assignments', label: '課題' },
+  { id: 'study-room', label: '自習室' },
+];
+
 export default function MyPage() {
   const { setChapterLinks, activeChapter, setActiveChapter } = useSidebar();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const myPageChapters: ChapterLink[] = [
-    { id: 'timetable', label: '時間割' },
-    { id: 'assignments', label: '課題' },
-    { id: 'study-room', label: '自習室' },
-  ];
-
+  // 1
   useEffect(() => {
     setChapterLinks(myPageChapters);
-    if (!activeChapter) {
-      setActiveChapter('timetable');
-    }
     return () => {
       setChapterLinks([]);
       setActiveChapter('');
     };
   }, [setChapterLinks, setActiveChapter]);
+
+  // 2
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    
+    if (tabFromUrl && myPageChapters.some(c => c.id === tabFromUrl)) {
+      setActiveChapter(tabFromUrl);
+    } else if (!tabFromUrl) {
+      // パラメータがない場合はデフォルトを設定
+      setSearchParams({ tab: 'timetable' }, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // 3
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    
+    // 現在のURLとStateが違う場合のみURLを更新
+    if (activeChapter && activeChapter !== tabFromUrl) {
+      setSearchParams({ tab: activeChapter }, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChapter]);
 
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
