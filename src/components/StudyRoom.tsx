@@ -120,9 +120,9 @@ const StudyRoom = () => {
         </div>
       }
     >
-      <div className="flex flex-col items-center justify-center p-2">
+      <div className="flex flex-col items-center justify-center px-1 py-2">
         
-        <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+        <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
           <div className="flex items-center justify-center mb-6 text-cyan-300">
             {/* ★ ここを時間割と同じ、スタイリッシュなベースライン揃えのデザインに変更 */}
             <h3 className="font-bold text-glow">
@@ -144,18 +144,22 @@ const StudyRoom = () => {
           </div>
           
           {currentRooms ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-slate-900 rounded-lg p-4 text-center border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">自習室</p>
-                <p className="text-3xl font-bold text-white tracking-wider">{currentRooms.study}</p>
+            /* スマホは gap-2、PC(md以上)は元の gap-4 */
+            <div className="grid grid-cols-2 gap-2 md:gap-4">
+              
+              <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700">
+                <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
+                <p className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.study}</p>
               </div>
-              <div className="bg-slate-900 rounded-lg p-4 text-center border border-slate-700">
-                <p className="text-slate-400 text-sm mb-1">談話室</p>
-                <p className="text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</p>
+
+              <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700">
+                <p className="text-slate-400 text-xs md:text-sm mb-1">談話室</p>
+                <p className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</p>
               </div>
+
             </div>
           ) : (
-            <p className="text-center text-slate-300 py-4">
+            <p className="text-center text-slate-300 py-4 text-sm md:text-base">
               {todaySchedule === null 
                 ? "データを読み込み中..." 
                 : "現在開放されている部屋はありません"}
