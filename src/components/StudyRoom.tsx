@@ -120,9 +120,9 @@ const StudyRoom = () => {
         </div>
       }
     >
-      <div className="flex flex-col items-center justify-center px-1 py-2">
+      <div className="flex flex-col items-center justify-center p-2">
         
-        <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+        <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 md:p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
           <div className="flex items-center justify-center mb-6 text-cyan-300">
             {/* ★ ここを時間割と同じ、スタイリッシュなベースライン揃えのデザインに変更 */}
             <h3 className="font-bold text-glow">
