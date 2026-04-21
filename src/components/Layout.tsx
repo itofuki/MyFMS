@@ -2,9 +2,9 @@ import { useRef } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
-import { FiMenu, FiSettings } from "react-icons/fi";
+import { FiMenu, FiSettings, FiCalendar, FiFileText, FiBookOpen, FiFolder } from "react-icons/fi";
 
-// ▼▼▼ メニューの中身（PC・スマホ共通）を切り出しました ▼▼▼
+// ▼▼▼ メニューの中身（アイコン変更＆設定文字サイズ縮小版） ▼▼▼
 const SidebarContent: React.FC<{
   links: ChapterLink[];
   activeId: string;
@@ -17,35 +17,55 @@ const SidebarContent: React.FC<{
     closeMenu(); // リンククリックでメニューを閉じる
   };
 
+  // 🌟 アイコンの出し分け（自習室を FiBookOpen に変更）
+  const getChapterIcon = (id: string) => {
+    switch (id) {
+      case 'timetable': return <FiCalendar size={20} />;
+      case 'assignments': return <FiFileText size={20} />;
+      case 'study-room': return <FiBookOpen size={20} />; // 直感的な「本」のアイコン
+      default: return <FiFolder size={20} />;
+    }
+  };
+
   return (
-    <div className="flex flex-col justify-between h-full">
-      <div className="pt-8 md:pt-18">
-        <h2 className="text-lg font-bold text-white mb-6 px-2">メニュー</h2>
-        <ul className="space-y-2">
-          {links.map(link => (
-            <li key={link.id}>
-              <button
-                onClick={() => handleNavigate(link.id)}
-                className={`w-full text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
-                  activeId === link.id
-                    ? 'bg-cyan-500 text-white shadow-lg'
-                    : 'text-gray-300 hover:bg-slate-700/80'
-                }`}
-              >
-                {link.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="pb-4">
+    <div className="flex flex-col h-full pt-8 md:pt-18 overflow-y-auto">
+      <h2 className="text-lg font-bold text-white mb-6 px-2">メニュー</h2>
+      
+      {/* チャプターリスト */}
+      <ul className="space-y-2 px-2">
+        {links.map(link => (
+          <li key={link.id}>
+            <button
+              onClick={() => handleNavigate(link.id)}
+              className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                activeId === link.id
+                  ? 'bg-cyan-500 text-white shadow-lg'
+                  : 'text-gray-300 hover:bg-slate-700/80'
+              }`}
+            >
+              {/* 左側のアイコン */}
+              <span className={`${activeId === link.id ? 'text-white' : 'text-slate-400'}`}>
+                {getChapterIcon(link.id)}
+              </span>
+              <span className="ml-3">{link.label}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 px-2">
+        {/* ------- 区切り線 ------- */}
+        <hr className="border-t border-white/10 mb-4" />
+        
         <Link 
           to="/setting" 
           onClick={closeMenu}
-          className="flex items-center gap-3 p-3 rounded-lg text-slate-400 hover:bg-slate-700/80 hover:text-cyan-400 transition-colors duration-200"
+          className="flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-700/80 hover:text-cyan-400 transition-colors duration-200"
         >
-          <FiSettings size={20} className="glowing-gear" />
-          <span className="font-medium text-sm">設定</span>
+          {/* 設定アイコンも文字に合わせて少しだけ小さく(18px)するとバランスが良いです */}
+          <FiSettings size={18} className="glowing-gear" />
+          {/* 🌟 文字サイズを text-xs にして小さくしました */}
+          <span className="font-medium text-xs ml-3">設定</span>
         </Link>
       </div>
     </div>
