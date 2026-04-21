@@ -103,17 +103,19 @@ export default function Layout() {
       const diffX = currentX - touchStartRef.current.x;
       const diffY = currentY - touchStartRef.current.y;
 
-      // 🌟 指を「10px」動かした段階で、縦移動か横移動かをロック（確定）する
+      // 🌟 10pxから「5px」に縮め、ブラウザがスクロールを始める前に素早くロックする
       if (isDraggingRef.current === null) {
-        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
-          // 横移動の方が大きければ「横スワイプ」としてロックする
+        if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
           isDraggingRef.current = Math.abs(diffX) > Math.abs(diffY);
         }
       }
 
-      // 🌟 横スワイプとしてロックされた場合、ブラウザの縦スクロールを完全に止める！
+      // 横スワイプとしてロックされた場合、縦スクロールを止める
       if (isDraggingRef.current === true) {
-        e.preventDefault(); 
+        // 🌟 ここを追加！キャンセル可能な場合のみ実行し、エラーを防ぐ
+        if (e.cancelable) {
+          e.preventDefault(); 
+        }
       }
     };
 
@@ -151,11 +153,10 @@ export default function Layout() {
   // =================================================================
 
   return (
-    // 🌟 修正: onTouchStartなどを削除し、ref={containerRef} を設定します
-    // touch-pan-y はもう不要なので削除しました
+    // 🌟 touch-pan-y を復活させます（ブラウザのスクロール誤爆を防ぐお守りです）
     <div 
       ref={containerRef}
-      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative overscroll-x-none"
+      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative overscroll-x-none touch-pan-y"
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {chapterLinks.length > 0 && (
