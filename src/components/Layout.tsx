@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
@@ -80,53 +80,82 @@ export default function Layout() {
   // =================================================================
   // スワイプ検知用の関数（超軽量・激甘判定版）
   // =================================================================
-  // 🌟 Stateの代わりに useRef を使って、再描画のラグを完全にゼロにします
+  const containerRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number, y: number } | null>(null);
 
-  const minSwipeDistance = 15; // 指をほんの少し（15px）フリックしただけで開く！
+  // true: 横スワイプ中, false: 縦スクロール中, null: まだ判定していない
+  const isDraggingRef = useRef<boolean | null>(null);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-  // 🌟 onTouchMove は使いません（ブラウザに任せてReactの処理を軽くします）
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      isDraggingRef.current = null; // 指を置いた時はまだ判定しない
+    };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    
-    // e.changedTouches を使って、指を「離した瞬間」の座標を取得
-    const touch = e.changedTouches[0];
-    const distanceX = touch.clientX - touchStartRef.current.x;
-    const distanceY = touch.clientY - touchStartRef.current.y;
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
 
-    // 縦に大きくズレた場合のみキャンセル（判定を「横幅の2倍」までさらに甘く）
-    if (Math.abs(distanceY) > Math.abs(distanceX) * 2) {
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const diffX = currentX - touchStartRef.current.x;
+      const diffY = currentY - touchStartRef.current.y;
+
+      // 🌟 指を「10px」動かした段階で、縦移動か横移動かをロック（確定）する
+      if (isDraggingRef.current === null) {
+        if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
+          // 横移動の方が大きければ「横スワイプ」としてロックする
+          isDraggingRef.current = Math.abs(diffX) > Math.abs(diffY);
+        }
+      }
+
+      // 🌟 横スワイプとしてロックされた場合、ブラウザの縦スクロールを完全に止める！
+      if (isDraggingRef.current === true) {
+        e.preventDefault(); 
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+
+      // 「横スワイプ」と判定されていた場合のみメニューの開閉を行う
+      if (isDraggingRef.current === true) {
+        const diffX = e.changedTouches[0].clientX - touchStartRef.current.x;
+        const minSwipeDistance = 30; // 30px以上の横移動で開く
+
+        if (!isMobileMenuOpen && diffX > minSwipeDistance) {
+          setIsMobileMenuOpen(true);
+        } else if (isMobileMenuOpen && diffX < -minSwipeDistance) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+
+      // 指を離したらリセット
       touchStartRef.current = null;
-      return;
-    }
+      isDraggingRef.current = null;
+    };
 
-    // ちょっとでも横にスワイプしていれば即座に開閉
-    if (!isMobileMenuOpen && distanceX > minSwipeDistance) {
-      setIsMobileMenuOpen(true);
-    } else if (isMobileMenuOpen && distanceX < -minSwipeDistance) {
-      setIsMobileMenuOpen(false);
-    }
+    // passive: false にすることで、ブラウザの標準スクロールを e.preventDefault() で止められるようになります
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-    // リセット
-    touchStartRef.current = null;
-  };
-
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobileMenuOpen, setIsMobileMenuOpen]);
   // =================================================================
 
   return (
-    // onTouchMove を削除しています
+    // 🌟 修正: onTouchStartなどを削除し、ref={containerRef} を設定します
+    // touch-pan-y はもう不要なので削除しました
     <div 
-      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative touch-pan-y overscroll-x-none"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={() => { touchStartRef.current = null; }}
+      ref={containerRef}
+      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative overscroll-x-none"
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {chapterLinks.length > 0 && (
