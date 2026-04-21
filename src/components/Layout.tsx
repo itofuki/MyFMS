@@ -29,7 +29,8 @@ const SidebarContent: React.FC<{
 
   return (
     <div className="flex flex-col h-full pt-4 md:pt-6 overflow-y-auto">
-      <h2 className="text-lg font-bold text-white mb-6 px-2">メニュー</h2>
+      {/* 🌟 text-white -> text-slate-800 dark:text-white */}
+      <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 px-2 transition-colors duration-300">メニュー</h2>
       
       <ul className="space-y-2 px-2">
         {links.map(link => (
@@ -39,7 +40,8 @@ const SidebarContent: React.FC<{
               className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
                 activeId === link.id
                   ? 'bg-cyan-500 text-white shadow-lg'
-                  : 'text-gray-300 hover:bg-slate-700/80'
+                  // 🌟 文字色とホバー色をライト/ダーク両対応に
+                  : 'text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-slate-700/80'
               }`}
             >
               <span className={`${activeId === link.id ? 'text-white' : 'text-slate-400'}`}>
@@ -52,7 +54,8 @@ const SidebarContent: React.FC<{
       </ul>
 
       <div className="mt-6 px-2">
-        <hr className="border-t border-white/10 mb-4" />
+        {/* 🌟 線の色をライト/ダーク両対応に */}
+        <hr className="border-t border-slate-300 dark:border-white/10 mb-4 transition-colors duration-300" />
         <button 
           onClick={() => handleNavigate('setting')}
           className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
@@ -146,7 +149,8 @@ export default function Layout() {
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {chapterLinks.length > 0 && (
-        <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 z-0 p-4 border-r border-white/10">
+        // 🌟 メニュー裏の背景とボーダー色を両対応に
+        <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-white dark:bg-slate-900 z-0 p-4 border-r border-slate-200 dark:border-white/10 transition-colors duration-300">
           <SidebarContent
             links={chapterLinks}
             activeId={activeChapter}
@@ -158,7 +162,8 @@ export default function Layout() {
 
       {/* ② メイン画面のラッパー（★ここが横にスライドします） */}
       <div 
-        className={`relative z-10 flex flex-col h-screen bg-slate-900 transition-transform duration-300 ease-out ${
+        // 🌟 メイン画面の背景を両対応に
+        className={`relative z-10 flex flex-col h-screen bg-slate-50 dark:bg-slate-900 transition-all duration-300 ease-out ${
           isMobileMenuOpen 
             ? 'translate-x-80 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.2)]'
             : 'translate-x-0'
@@ -166,17 +171,20 @@ export default function Layout() {
       >
         {isMobileMenuOpen && (
           <div 
-            className="md:hidden absolute inset-0 bg-black/40 z-50 backdrop-blur-[1px]"
+            // 🌟 ライトモード時は少し明るめの暗幕に
+            className="md:hidden absolute inset-0 bg-black/20 dark:bg-black/40 z-50 backdrop-blur-[1px] transition-colors duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
         )}
 
-        <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 backdrop-blur-lg border-b border-white/10">
+        {/* 🌟 ヘッダーバーの背景とボーダーを両対応に */}
+        <nav className="absolute top-0 left-0 w-full z-20 bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg border-b border-slate-200 dark:border-white/10 transition-colors duration-300">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
               {chapterLinks.length > 0 && (
-                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-slate-300" aria-label="メニューを開く">
+                // 🌟 ハンバーガーアイコンの色を両対応に
+                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors duration-300" aria-label="メニューを開く">
                   <FiMenu size={24} />
                 </button>
               )}
@@ -193,7 +201,8 @@ export default function Layout() {
             
             {/* PC用サイドバー */}
             {chapterLinks.length > 0 && (
-              <aside className="hidden md:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-slate-900/60 border-r border-white/10 p-4 pt-16 flex-col justify-between z-10">
+              // 🌟 PC用サイドバーの背景とボーダーを両対応に
+              <aside className="hidden md:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-white/60 dark:bg-slate-900/60 border-r border-slate-200 dark:border-white/10 p-4 pt-16 flex-col justify-between z-10 transition-colors duration-300">
                 <SidebarContent
                   links={chapterLinks}
                   activeId={activeChapter}
@@ -210,14 +219,16 @@ export default function Layout() {
         </div>
 
         {/* 🌟 3. ボトムナビの追加: スライドするメイン画面の中に配置することで、メニューを開いた時に一緒に横へスライドします */}
-        <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50 pb-2 pt-1">
+        {/* 🌟 ボトムナビゲーションの背景とボーダーを両対応に */}
+        <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700/50 pb-2 pt-1 transition-colors duration-300">
           <ul className="flex justify-around items-center h-14 px-1">
             {chapterLinks.map(link => (
               <li key={link.id} className="flex-1">
                 <button
                   onClick={() => setActiveChapter(link.id)}
                   className={`w-full flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
-                    activeChapter === link.id ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+                    // 🌟 アクティブじゃない時の文字色を両対応に
+                    activeChapter === link.id ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                   }`}
                 >
                   {getChapterIcon(link.id, 24)}
