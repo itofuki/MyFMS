@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import ChapterFrame from './ChapterFrame';
-import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiEdit, FiTool, FiLink, FiEdit2, FiX } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiFileText, FiTool, FiLink, FiEdit2, FiX } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { TextInput, Select, Button, Group, Checkbox, useMantineTheme, SimpleGrid } from '@mantine/core';
 import { DatePickerInput, type DayProps } from '@mantine/dates';
@@ -229,7 +229,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       title={
         <>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3">
-            <FiEdit className={`text-2xl sm:text-3xl transition-colors ${isAdminMode ? 'text-yellow-400' : 'text-cyan-400'}`} />
+            <FiFileText className={`text-2xl sm:text-3xl transition-colors ${isAdminMode ? 'text-yellow-400' : 'text-cyan-400'}`} />
             <span className={`font-orbitron font-bold text-glow text-xl sm:text-3xl transition-colors ${isAdminMode ? 'text-yellow-400' : 'text-cyan-300'}`}>
               課題
             </span>
