@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
@@ -67,9 +67,6 @@ export default function Layout() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
-    
-    // 閉じている時は左端から80px以内のタッチのみ反応
-    // if (!isMobileMenuOpen && touch.clientX > edgeThreshold) return;
     
     touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
