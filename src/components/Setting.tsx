@@ -1,13 +1,15 @@
-/* src/pages/Setting */
+/* src/pages/Setting.tsx */
 
 import { useState, useEffect, type FormEvent } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { toast } from 'sonner';
-import RadioGroup from "../components/RadioGroup";
-import Switch from "../components/Switch";
-import Collapsible from "../components/Collapsible";
+import { FiSettings } from "react-icons/fi";
+import RadioGroup from "./RadioGroup";
+import Switch from "./Switch";
+import Collapsible from "./Collapsible";
+import ChapterFrame from "../components/ChapterFrame"; // パスは環境に合わせて調整してください
 
 // DBから取得するマスターデータの型（IDは数値）
 type DeptDB = { id: number; name: string; code: string };
@@ -124,7 +126,7 @@ export default function Setting() {
     try {
       const { error } = await supabase.from("profiles").upsert({
         user_id: user.id,
-        class_id: courseClass, // 数値のID (例: 3000000) を保存
+        class_id: courseClass,
         english_id: englishID,
         auto_open: autoOpen,
         updated_at: new Date().toISOString(),
@@ -132,7 +134,6 @@ export default function Setting() {
 
       if (error) throw error;
       toast.success("設定を更新しました！");
-      navigate("/mypage");
     } catch (error: any) {
       toast.error(`エラーが発生しました: ${error.message}`);
     } finally {
@@ -148,81 +149,98 @@ export default function Setting() {
 
   if (!user) return <div>Loading...</div>;
 
-  // 数値と文字列の違いによるバグを防ぐため、すべて文字列(String)に変換してから比較・生成する
   const departmentOptions = departmentsDB.map(d => ({ value: String(d.id), label: d.name }));
-  
   const courseOptions = coursesDB
     .filter(c => String(c.department_id) === String(department))
     .map(c => ({ value: String(c.id), label: c.name }));
-    
   const classOptions = classesDB
     .filter(c => String(c.course_id) === String(baseCourse))
     .map(c => ({ value: String(c.id), label: c.name }));
 
   return (
-    <div className="min-h-screen flex flex-col items-center text-white px-2 pt-18 md:pt-20 pb-10">
-      <div className="w-full max-w-2xl px-3 py-5 md:p-8 rounded-2xl backdrop-blur-xl bg-white/10 shadow-lg border border-white/20">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold font-display pl-3 pt-3">設定</h1>
-          <Link to="/mypage" className="text-md text-cyan-400 hover:underline pr-3 pt-3">マイページに戻る</Link>
+    // ChapterFrame のタイトル部分は維持
+    <ChapterFrame
+      title={
+        <div className="flex justify-center items-center gap-3 w-full">
+          <FiSettings className="text-cyan-400 text-2xl sm:text-3xl" />
+          <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
+            設定
+          </span>
         </div>
+      }
+    >
+      <div className="flex flex-col items-center justify-center p-2 animate-in fade-in duration-300">
+        {/* 🌟 修正: 横幅を大きく (max-w-2xl -> max-w-3xl)
+               配力を戻す (シアンベース -> 白ベースの半透明) */}
+        <div className="w-full max-w-3xl bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-8 mb-6 shadow-xl">
 
-        <form onSubmit={handleSubmit} className="space-y-6 mb-8 text-left">
-          <RadioGroup 
-            legend="所属する学科を選択してください" 
-            options={departmentOptions} 
-            selectedValue={department ? String(department) : null} 
-            onChange={(val) => setDepartment(Number(val))} 
-          />
-          
-          {department && courseOptions.length > 0 && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <RadioGroup 
-                legend="コースを選択してください" 
-                options={courseOptions} 
-                selectedValue={baseCourse ? String(baseCourse) : null} 
-                onChange={(val) => setBaseCourse(Number(val))} 
+          <form onSubmit={handleSubmit} className="space-y-6 text-left">
+            <RadioGroup 
+              legend="所属する学科を選択してください" 
+              options={departmentOptions} 
+              selectedValue={department ? String(department) : null} 
+              onChange={(val) => setDepartment(Number(val))} 
+            />
+            
+            {department && courseOptions.length > 0 && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <RadioGroup 
+                  legend="コースを選択してください" 
+                  options={courseOptions} 
+                  selectedValue={baseCourse ? String(baseCourse) : null} 
+                  onChange={(val) => setBaseCourse(Number(val))} 
               />
+              </div>
+            )}
+
+            {baseCourse && classOptions.length > 0 && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <RadioGroup 
+                  legend="クラスを選択してください" 
+                  options={classOptions} 
+                  selectedValue={courseClass ? String(courseClass) : null} 
+                  onChange={(val) => setCourseClass(Number(val))} 
+                />
+              </div>
+            )}
+
+            {/* 🌟 配力を戻す (hr の色) */}
+            <hr className="border-t border-white/10 my-6" />
+            
+            <RadioGroup 
+              legend="英語のクラスを選択してください" 
+              options={englishClassOptions} 
+              selectedValue={englishID ? String(englishID) : null} 
+              onChange={(val) => setEnglishID(Number(val))} 
+            />
+            
+            <Collapsible title="Advanced">
+              <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
+              <p className="text-xs text-slate-400 mt-2">※ポップアップブロックを解除してください</p>
+            </Collapsible>
+
+            <div className="text-center pt-6">
+              {/* 🌟 配力を戻す (保存ボタンのデザイン) */}
+              <button type="submit" disabled={loading} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
+                {loading ? "保存中..." : "保存"}
+              </button>
             </div>
-          )}
+          </form>
 
-          {baseCourse && classOptions.length > 0 && (
-            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-              <RadioGroup 
-                legend="クラスを選択してください" 
-                options={classOptions} 
-                selectedValue={courseClass ? String(courseClass) : null} 
-                onChange={(val) => setCourseClass(Number(val))} 
-              />
-            </div>
-          )}
-
-          <hr className="border-t border-white/10 my-6" />
+          {/* 🌟 配力を戻す (hr の色) */}
+          <hr className="border-t border-white/10 my-8" />
           
-          <RadioGroup 
-            legend="英語のクラスを選択してください" 
-            options={englishClassOptions} 
-            selectedValue={englishID ? String(englishID) : null} 
-            onChange={(val) => setEnglishID(Number(val))} 
-          />
-          
-          <Collapsible title="Advanced">
-            <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
-            <p>※ポップアップブロックを解除してください</p>
-          </Collapsible>
-
-          <div className="text-center pt-4">
-            <button type="submit" disabled={loading} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
-              {loading ? "保存中..." : "保存"}
+          <div className="text-center">
+            {/* 🌟 配力を戻す (h3 の色) */}
+            <h3 className="text-sm md:text-base font-semibold text-slate-400 mb-4">アカウント操作</h3>
+            {/* 🌟 配力を戻す (ログアウトボタンのデザイン) */}
+            <button onClick={handleLogout} className="w-full max-w-xs py-3 rounded-xl bg-slate-700/50 hover:bg-red-500/80 font-semibold text-white border border-white/10 hover:border-red-500 transition-all duration-300">
+              ログアウト
             </button>
           </div>
-        </form>
-        <hr className="border-t border-white/20 my-8" />
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-300 mb-4">アカウント操作</h3>
-          <button onClick={handleLogout} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-pink-500 to-red-500 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300">ログアウト</button>
+          
         </div>
       </div>
-    </div>
+    </ChapterFrame>
   );
 }

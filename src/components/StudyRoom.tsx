@@ -115,7 +115,7 @@ const StudyRoom = () => {
         <div className="flex justify-center items-center gap-3 w-full">
           <FiBookOpen className="text-cyan-400 text-2xl sm:text-3xl" />
           <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
-            自習室
+            自習室・談話室
           </span>
         </div>
       }

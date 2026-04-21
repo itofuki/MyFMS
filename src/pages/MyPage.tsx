@@ -11,6 +11,7 @@ import { FiCpu, FiWifi, FiGitPullRequest, FiPlay, FiFilm, FiHelpCircle } from "r
 import { TimetableContainer, type Day, type Subject } from '../components/Timetable';
 import StudyRoom from '../components/StudyRoom';
 import Assignments from '../components/Assignments';
+import Setting from '../components/Setting';
 
 // =================================================================
 // 型定義と共通データ
@@ -333,6 +334,8 @@ export default function MyPage() {
         return <Assignments subject={uniqueSubjects} />;
       case 'study-room':
         return <StudyRoom />;
+      case 'setting':
+        return <Setting />;
       default:
         return null;
     }
