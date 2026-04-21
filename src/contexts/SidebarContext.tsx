@@ -1,3 +1,5 @@
+/* src/contexts/SidebarContext.tsx */
+
 import { createContext, useState, useContext, type ReactNode } from 'react';
 
 // チャプターリンクの型
