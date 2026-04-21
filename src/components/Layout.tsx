@@ -29,8 +29,7 @@ const SidebarContent: React.FC<{
 
   return (
     <div className="flex flex-col h-full pt-4 md:pt-6 overflow-y-auto">
-      {/* 🌟 text-white -> text-slate-800 dark:text-white */}
-      <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 px-2 transition-colors duration-300">メニュー</h2>
+      <h2 className="text-lg font-bold text-white mb-6 px-2">メニュー</h2>
       
       <ul className="space-y-2 px-2">
         {links.map(link => (
@@ -40,8 +39,7 @@ const SidebarContent: React.FC<{
               className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
                 activeId === link.id
                   ? 'bg-cyan-500 text-white shadow-lg'
-                  // 🌟 文字色とホバー色をライト/ダーク両対応に
-                  : 'text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-slate-700/80'
+                  : 'text-gray-300 hover:bg-slate-700/80'
               }`}
             >
               <span className={`${activeId === link.id ? 'text-white' : 'text-slate-400'}`}>
@@ -54,8 +52,7 @@ const SidebarContent: React.FC<{
       </ul>
 
       <div className="mt-6 px-2">
-        {/* 🌟 線の色をライト/ダーク両対応に */}
-        <hr className="border-t border-slate-300 dark:border-white/10 mb-4 transition-colors duration-300" />
+        <hr className="border-t border-white/10 mb-4" />
         <button 
           onClick={() => handleNavigate('setting')}
           className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
@@ -145,12 +142,12 @@ export default function Layout() {
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative overscroll-x-none touch-pan-y"
+      // 🌟 修正: h-screen ではなく h-[100dvh] を使い、スマホのバーを含めた正確な高さを確保します
+      className="h-[100dvh] bg-slate-900 text-slate-300 light:bg-slate-50 light:text-slate-800 overflow-hidden relative overscroll-x-none touch-pan-y transition-colors duration-300"
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {chapterLinks.length > 0 && (
-        // 🌟 メニュー裏の背景とボーダー色を両対応に
-        <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-white dark:bg-slate-900 z-0 p-4 border-r border-slate-200 dark:border-white/10 transition-colors duration-300">
+        <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 z-0 p-4 border-r border-white/10">
           <SidebarContent
             links={chapterLinks}
             activeId={activeChapter}
@@ -162,8 +159,7 @@ export default function Layout() {
 
       {/* ② メイン画面のラッパー（★ここが横にスライドします） */}
       <div 
-        // 🌟 メイン画面の背景を両対応に
-        className={`relative z-10 flex flex-col h-screen bg-slate-50 dark:bg-slate-900 transition-all duration-300 ease-out ${
+        className={`relative z-10 flex flex-col h-screen bg-slate-900 transition-transform duration-300 ease-out ${
           isMobileMenuOpen 
             ? 'translate-x-80 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.2)]'
             : 'translate-x-0'
@@ -171,20 +167,17 @@ export default function Layout() {
       >
         {isMobileMenuOpen && (
           <div 
-            // 🌟 ライトモード時は少し明るめの暗幕に
-            className="md:hidden absolute inset-0 bg-black/20 dark:bg-black/40 z-50 backdrop-blur-[1px] transition-colors duration-300"
+            className="md:hidden absolute inset-0 bg-black/40 z-50 backdrop-blur-[1px]"
             onClick={() => setIsMobileMenuOpen(false)}
             aria-hidden="true"
           />
         )}
 
-        {/* 🌟 ヘッダーバーの背景とボーダーを両対応に */}
-        <nav className="absolute top-0 left-0 w-full z-20 bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg border-b border-slate-200 dark:border-white/10 transition-colors duration-300">
+        <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 backdrop-blur-lg border-b border-white/10">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
               {chapterLinks.length > 0 && (
-                // 🌟 ハンバーガーアイコンの色を両対応に
-                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors duration-300" aria-label="メニューを開く">
+                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-slate-300" aria-label="メニューを開く">
                   <FiMenu size={24} />
                 </button>
               )}
@@ -196,13 +189,12 @@ export default function Layout() {
         </nav>
 
         {/* 🌟 2. 修正: pb-16 を追加して、一番下までスクロールした時にボトムナビに隠れないようにする（PC版では pb-0 で無効化） */}
-        <div className="flex-1 overflow-y-auto w-full pb-16 md:pb-0">
+        <div className="flex-1 overflow-y-auto w-full pb-20 md:pb-0">
           <div className="flex w-full max-w-7xl mx-auto">
             
             {/* PC用サイドバー */}
             {chapterLinks.length > 0 && (
-              // 🌟 PC用サイドバーの背景とボーダーを両対応に
-              <aside className="hidden md:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-white/60 dark:bg-slate-900/60 border-r border-slate-200 dark:border-white/10 p-4 pt-16 flex-col justify-between z-10 transition-colors duration-300">
+              <aside className="hidden md:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-slate-900/60 border-r border-white/10 p-4 pt-16 flex-col justify-between z-10">
                 <SidebarContent
                   links={chapterLinks}
                   activeId={activeChapter}
@@ -219,16 +211,14 @@ export default function Layout() {
         </div>
 
         {/* 🌟 3. ボトムナビの追加: スライドするメイン画面の中に配置することで、メニューを開いた時に一緒に横へスライドします */}
-        {/* 🌟 ボトムナビゲーションの背景とボーダーを両対応に */}
-        <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700/50 pb-2 pt-1 transition-colors duration-300">
+        <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-700/50 pb-2 pt-1">
           <ul className="flex justify-around items-center h-14 px-1">
             {chapterLinks.map(link => (
               <li key={link.id} className="flex-1">
                 <button
                   onClick={() => setActiveChapter(link.id)}
                   className={`w-full flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
-                    // 🌟 アクティブじゃない時の文字色を両対応に
-                    activeChapter === link.id ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                    activeChapter === link.id ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
                   }`}
                 >
                   {getChapterIcon(link.id, 24)}
@@ -241,7 +231,7 @@ export default function Layout() {
               <button
                 onClick={() => setActiveChapter('setting')}
                 className={`w-full flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
-                  activeChapter === 'setting' ? 'text-cyan-400' : 'text-slate-500 hover:text-slate-300'
+                  activeChapter === 'setting' ? 'text-cyan-500 dark:text-cyan-400' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
                 }`}
               >
                 <FiSettings size={24} />

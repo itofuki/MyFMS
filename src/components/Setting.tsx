@@ -92,12 +92,14 @@ export default function Setting() {
   }, [navigate]);
 
   useEffect(() => {
-    if (isLightMode) {
-      document.documentElement.classList.remove("dark");
-    } else {
-      document.documentElement.classList.add("dark");
-    }
-  }, [isLightMode]);
+  if (isLightMode) {
+    document.documentElement.classList.add("light");
+    document.documentElement.classList.remove("dark"); // 念のため古いdarkは消す
+  } else {
+    document.documentElement.classList.remove("light");
+    document.documentElement.classList.add("dark");    // 常にdarkをベースに
+  }
+}, [isLightMode]);
 
   useEffect(() => {
     if (department && coursesDB.length > 0) {
@@ -166,8 +168,8 @@ export default function Setting() {
       title={
         <div className="flex justify-center items-center gap-3 w-full">
           {/* 🌟 ライトモード時はアイコンを少し濃い青緑に */}
-          <FiSettings className="text-cyan-600 dark:text-cyan-400 text-2xl sm:text-3xl transition-colors duration-300" />
-          <span className="font-orbitron font-bold text-cyan-700 dark:text-cyan-300 dark:text-glow text-xl sm:text-3xl transition-colors duration-300">
+          <FiSettings className="text-cyan-400 text-2xl sm:text-3xl" />
+          <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
             設定
           </span>
         </div>
@@ -175,8 +177,7 @@ export default function Setting() {
     >
       <div className="flex flex-col items-center justify-center p-2 animate-in fade-in duration-300">
         
-        {/* 🌟 カード部分をライト/ダーク両対応に。transitionを追加して色の変化を滑らかに。 */}
-        <div className="w-full max-w-3xl bg-white/80 dark:bg-slate-800/40 backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-2xl p-5 md:p-8 mb-6 shadow-xl transition-all duration-300">
+        <div className="w-full max-w-3xl bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-8 mb-6 shadow-xl">
 
           <form onSubmit={handleSubmit} className="space-y-6 text-left">
             {/* 🌟 親要素に文字色の両対応を設定。RadioGroupなどの子要素に継承させます。 */}
@@ -190,7 +191,7 @@ export default function Setting() {
             </div>
             
             {department && courseOptions.length > 0 && (
-              <div className="animate-in fade-in slide-in-from-top-2 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <RadioGroup 
                   legend="コースを選択してください" 
                   options={courseOptions} 
@@ -201,7 +202,7 @@ export default function Setting() {
             )}
 
             {baseCourse && classOptions.length > 0 && (
-              <div className="animate-in fade-in slide-in-from-top-2 text-slate-800 dark:text-slate-200 transition-colors duration-300">
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <RadioGroup 
                   legend="クラスを選択してください" 
                   options={classOptions} 
@@ -211,30 +212,19 @@ export default function Setting() {
               </div>
             )}
 
-            {/* 🌟 線の色を両対応に */}
-            <hr className="border-t border-slate-200 dark:border-white/10 my-6 transition-colors duration-300" />
+            <hr className="border-t border-white/10 my-6" />
             
-            <div className="text-slate-800 dark:text-slate-200 transition-colors duration-300">
-              <RadioGroup 
-                legend="英語のクラスを選択してください" 
-                options={englishClassOptions} 
-                selectedValue={englishID ? String(englishID) : null} 
-                onChange={(val) => setEnglishID(Number(val))} 
-              />
-            </div>
+            <RadioGroup 
+              legend="英語のクラスを選択してください" 
+              options={englishClassOptions} 
+              selectedValue={englishID ? String(englishID) : null} 
+              onChange={(val) => setEnglishID(Number(val))} 
+            />
             
-            {/* 🌟 Collapsible内部の文字色も対応 */}
-            <div className="text-slate-800 dark:text-white transition-colors duration-300">
-              <Collapsible title="Advanced">
-                <div className="space-y-4 pt-2">
-                  <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
-                  <Switch label="ライトモード（白ベース）にする" checked={isLightMode} onChange={setIsLightMode} />
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 transition-colors duration-300">
-                  ※ポップアップブロックを解除してください
-                </p>
-              </Collapsible>
-            </div>
+            <Collapsible title="Advanced">
+              <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
+              <p className="text-xs text-slate-400 mt-2">※ポップアップブロックを解除してください</p>
+            </Collapsible>
 
             <div className="text-center pt-6">
               <button type="submit" disabled={loading} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
@@ -243,17 +233,13 @@ export default function Setting() {
             </div>
           </form>
 
-          <hr className="border-t border-slate-200 dark:border-white/10 my-8 transition-colors duration-300" />
+          <hr className="border-t border-white/10 my-8" />
           
           <div className="text-center">
-            {/* 🌟 見出しとログアウトボタンの色を両対応に */}
-            <h3 className="text-sm md:text-base font-semibold text-slate-500 dark:text-slate-400 mb-4 transition-colors duration-300">
-              アカウント操作
-            </h3>
-            <button 
-              onClick={handleLogout} 
-              className="w-full max-w-xs py-3 rounded-xl bg-slate-100 dark:bg-slate-700/50 hover:bg-red-500/80 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 hover:border-red-500 transition-all duration-300"
-            >
+            {/* 🌟 配力を戻す (h3 の色) */}
+            <h3 className="text-sm md:text-base font-semibold text-slate-400 mb-4">アカウント操作</h3>
+            {/* 🌟 配力を戻す (ログアウトボタンのデザイン) */}
+            <button onClick={handleLogout} className="w-full max-w-xs py-3 rounded-xl bg-slate-700/50 hover:bg-red-500/80 font-semibold text-white border border-white/10 hover:border-red-500 transition-all duration-300">
               ログアウト
             </button>
           </div>
