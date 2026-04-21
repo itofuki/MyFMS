@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext";
@@ -58,75 +58,58 @@ export default function Layout() {
   const { isMobileMenuOpen, setIsMobileMenuOpen, chapterLinks, activeChapter, setActiveChapter } = useSidebar();
 
   // =================================================================
-  // スワイプ検知用のStateと関数（Layoutで一括管理）
+  // スワイプ検知用の関数（超軽量・激甘判定版）
   // =================================================================
-  // =================================================================
-  // スワイプ検知用のStateと関数（改善版）
-  // =================================================================
-  // X座標とY座標の両方を記録するように変更
-  const [touchStart, setTouchStart] = useState<{ x: number, y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number, y: number } | null>(null);
+  // 🌟 Stateの代わりに useRef を使って、再描画のラグを完全にゼロにします
+  const touchStartRef = useRef<{ x: number, y: number } | null>(null);
 
-  const minSwipeDistance = 40; // 少しだけ判定を甘くする（50 -> 40）
-  const edgeThreshold = 50;    // 左端の当たり判定を少し広くする（30 -> 50）
+  const minSwipeDistance = 15; // 指をほんの少し（15px）フリックしただけで開く！
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    const clientX = e.targetTouches[0].clientX;
-    const clientY = e.targetTouches[0].clientY;
+    const touch = e.touches[0];
     
-    // メニューが閉じている時は、画面の左端からのスワイプのみ許可
-    if (!isMobileMenuOpen && clientX > edgeThreshold) return;
+    // 閉じている時は左端から80px以内のタッチのみ反応
+    // if (!isMobileMenuOpen && touch.clientX > edgeThreshold) return;
     
-    setTouchStart({ x: clientX, y: clientY });
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
-  };
+  // 🌟 onTouchMove は使いません（ブラウザに任せてReactの処理を軽くします）
 
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
     
-    const distanceX = touchEnd.x - touchStart.x;
-    const distanceY = touchEnd.y - touchStart.y;
+    // e.changedTouches を使って、指を「離した瞬間」の座標を取得
+    const touch = e.changedTouches[0];
+    const distanceX = touch.clientX - touchStartRef.current.x;
+    const distanceY = touch.clientY - touchStartRef.current.y;
 
-    // 🌟重要：縦方向への移動の方が大きい場合は「スクロール」とみなし、処理を中断
-    if (Math.abs(distanceY) > Math.abs(distanceX)) {
-      setTouchStart(null);
-      setTouchEnd(null);
+    // 縦に大きくズレた場合のみキャンセル（判定を「横幅の2倍」までさらに甘く）
+    if (Math.abs(distanceY) > Math.abs(distanceX) * 2) {
+      touchStartRef.current = null;
       return;
     }
 
-    // 横方向のスワイプ判定
+    // ちょっとでも横にスワイプしていれば即座に開閉
     if (!isMobileMenuOpen && distanceX > minSwipeDistance) {
-      setIsMobileMenuOpen(true); // 右へスワイプで開く
-    }
-    if (isMobileMenuOpen && distanceX < -minSwipeDistance) {
-      setIsMobileMenuOpen(false); // 左へスワイプで閉じる
+      setIsMobileMenuOpen(true);
+    } else if (isMobileMenuOpen && distanceX < -minSwipeDistance) {
+      setIsMobileMenuOpen(false);
     }
 
-    // 次の操作のためにリセット
-    setTouchStart(null);
-    setTouchEnd(null);
+    // リセット
+    touchStartRef.current = null;
   };
 
-  // ブラウザによるタッチ中断（スクロール発生など）への対応
-  const handleTouchCancel = () => {
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
   // =================================================================
 
   return (
-    // 画面全体を覆い、はみ出た部分を隠す大枠
+    // onTouchMove を削除しています
     <div 
-      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative"
+      className="min-h-screen bg-slate-900 text-slate-300 overflow-hidden relative touch-pan-y overscroll-x-none"
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchCancel}
+      onTouchCancel={() => { touchStartRef.current = null; }}
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {/* メイン画面が右にスライドすると、この下敷きになっていたメニューが見える仕組みです */}
@@ -145,7 +128,7 @@ export default function Layout() {
       <div 
         className={`relative z-10 flex flex-col h-screen bg-slate-900 transition-transform duration-300 ease-out ${
           isMobileMenuOpen 
-            ? 'translate-x-64 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.6)]' // 開いた時は右にズレて影を落とす
+            ? 'translate-x-64 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.2)]' // 🌟 0.6 を 0.2 に変更して薄くしました
             : 'translate-x-0'
         }`}
       >
