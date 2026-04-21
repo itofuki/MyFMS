@@ -60,37 +60,62 @@ export default function Layout() {
   // =================================================================
   // スワイプ検知用のStateと関数（Layoutで一括管理）
   // =================================================================
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  // =================================================================
+  // スワイプ検知用のStateと関数（改善版）
+  // =================================================================
+  // X座標とY座標の両方を記録するように変更
+  const [touchStart, setTouchStart] = useState<{ x: number, y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number, y: number } | null>(null);
 
-  const minSwipeDistance = 50;
-  const edgeThreshold = 30; // 誤爆防止: 画面左端から30px以内のスワイプのみ「開く」反応をする
+  const minSwipeDistance = 40; // 少しだけ判定を甘くする（50 -> 40）
+  const edgeThreshold = 50;    // 左端の当たり判定を少し広くする（30 -> 50）
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     const clientX = e.targetTouches[0].clientX;
+    const clientY = e.targetTouches[0].clientY;
     
     // メニューが閉じている時は、画面の左端からのスワイプのみ許可
     if (!isMobileMenuOpen && clientX > edgeThreshold) return;
     
-    setTouchStart(clientX);
+    setTouchStart({ x: clientX, y: clientY });
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStart === null) return;
-    setTouchEnd(e.targetTouches[0].clientX);
+    if (!touchStart) return;
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
   };
 
   const handleTouchEnd = () => {
-    if (touchStart === null || touchEnd === null) return;
-    const distance = touchEnd - touchStart;
+    if (!touchStart || !touchEnd) return;
+    
+    const distanceX = touchEnd.x - touchStart.x;
+    const distanceY = touchEnd.y - touchStart.y;
 
-    if (!isMobileMenuOpen && distance > minSwipeDistance) {
+    // 🌟重要：縦方向への移動の方が大きい場合は「スクロール」とみなし、処理を中断
+    if (Math.abs(distanceY) > Math.abs(distanceX)) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+
+    // 横方向のスワイプ判定
+    if (!isMobileMenuOpen && distanceX > minSwipeDistance) {
       setIsMobileMenuOpen(true); // 右へスワイプで開く
     }
-    if (isMobileMenuOpen && distance < -minSwipeDistance) {
+    if (isMobileMenuOpen && distanceX < -minSwipeDistance) {
       setIsMobileMenuOpen(false); // 左へスワイプで閉じる
     }
+
+    // 次の操作のためにリセット
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
+  // ブラウザによるタッチ中断（スクロール発生など）への対応
+  const handleTouchCancel = () => {
+    setTouchStart(null);
+    setTouchEnd(null);
   };
   // =================================================================
 
@@ -101,6 +126,7 @@ export default function Layout() {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
       {/* メイン画面が右にスライドすると、この下敷きになっていたメニューが見える仕組みです */}
