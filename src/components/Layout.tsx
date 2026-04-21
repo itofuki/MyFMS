@@ -109,9 +109,8 @@ export default function Layout() {
       onTouchCancel={() => { touchStartRef.current = null; }}
     >
       {/* ① スマホ用メニュー（最下層に固定配置） */}
-      {/* メイン画面が右にスライドすると、この下敷きになっていたメニューが見える仕組みです */}
       {chapterLinks.length > 0 && (
-        <div className="md:hidden fixed inset-y-0 left-0 w-64 bg-slate-900 z-0 p-4 border-r border-white/10">
+        <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 z-0 p-4 border-r border-white/10">
           <SidebarContent
             links={chapterLinks}
             activeId={activeChapter}
@@ -125,7 +124,7 @@ export default function Layout() {
       <div 
         className={`relative z-10 flex flex-col h-screen bg-slate-900 transition-transform duration-300 ease-out ${
           isMobileMenuOpen 
-            ? 'translate-x-64 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.2)]' // 🌟 0.6 を 0.2 に変更して薄くしました
+            ? 'translate-x-80 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.2)]'
             : 'translate-x-0'
         }`}
       >
