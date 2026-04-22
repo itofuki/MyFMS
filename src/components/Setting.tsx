@@ -166,21 +166,21 @@ export default function Setting() {
   return (
     <ChapterFrame
       title={
-        <div className="flex justify-center items-center gap-3 w-full">
-          {/* 🌟 ライトモード時はアイコンを少し濃い青緑に */}
-          <FiSettings className="text-cyan-400 text-2xl sm:text-3xl" />
+        <div className="flex justify-center items-center gap-2 sm:gap-3 w-full">
+          <FiSettings className="text-cyan-400 text-xl sm:text-3xl" />
           <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
             設定
           </span>
         </div>
       }
     >
-      <div className="flex flex-col items-center justify-center p-2 animate-in fade-in duration-300">
+      <div className="flex flex-col items-center justify-center p-1 sm:p-2 animate-in fade-in duration-300">
         
-        <div className="w-full max-w-3xl bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 md:p-8 mb-6 shadow-xl">
+        {/* スマホ時: p-4, タブレット時: sm:p-6, PC時: md:p-8 と段階的に余白を調整 */}
+        <div className="w-full max-w-3xl bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-6 md:p-8 mb-6 shadow-xl">
 
-          <form onSubmit={handleSubmit} className="space-y-6 text-left">
-            {/* 🌟 親要素に文字色の両対応を設定。RadioGroupなどの子要素に継承させます。 */}
+          {/* スマホ時: space-y-4 で間隔を詰める */}
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 text-left">
             <div className="text-slate-800 dark:text-slate-200 transition-colors duration-300">
               <RadioGroup 
                 legend="所属する学科を選択してください" 
@@ -212,6 +212,7 @@ export default function Setting() {
               </div>
             )}
 
+            {/* スマホ時: my-4 で区切り線の上下余白を減らす */}
             <hr className="border-t border-white/10 my-6" />
             
             <RadioGroup 
@@ -226,20 +227,19 @@ export default function Setting() {
               <p className="text-xs text-slate-400 mt-2">※ポップアップブロックを解除してください</p>
             </Collapsible>
 
-            <div className="text-center pt-6">
-              <button type="submit" disabled={loading} className="w-full max-w-xs py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
+            <div className="text-center pt-4 sm:pt-6">
+              {/* スマホ時: py-2.5, text-base でボタンを少し小さく */}
+              <button type="submit" disabled={loading} className="w-full max-w-xs py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-base sm:text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
                 {loading ? "保存中..." : "保存"}
               </button>
             </div>
           </form>
 
-          <hr className="border-t border-white/10 my-8" />
+          <hr className="border-t border-white/10 my-6 sm:my-8" />
           
           <div className="text-center">
-            {/* 🌟 配力を戻す (h3 の色) */}
-            <h3 className="text-sm md:text-base font-semibold text-slate-400 mb-4">アカウント操作</h3>
-            {/* 🌟 配力を戻す (ログアウトボタンのデザイン) */}
-            <button onClick={handleLogout} className="w-full max-w-xs py-3 rounded-xl bg-slate-700/50 hover:bg-red-500/80 font-semibold text-white border border-white/10 hover:border-red-500 transition-all duration-300">
+            <h3 className="text-xs sm:text-sm md:text-base font-semibold text-slate-400 mb-3 sm:mb-4">アカウント操作</h3>
+            <button onClick={handleLogout} className="w-full max-w-xs py-2.5 sm:py-3 rounded-xl bg-slate-700/50 hover:bg-red-500/80 font-semibold text-sm sm:text-base text-white border border-white/10 hover:border-red-500 transition-all duration-300">
               ログアウト
             </button>
           </div>

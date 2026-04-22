@@ -1,3 +1,5 @@
+/* src/components/Switch.tsx */
+
 // 型をインポート
 import type { FC } from 'react';
 
@@ -10,9 +12,12 @@ type SwitchProps = {
 
 const Switch: FC<SwitchProps> = ({ label, checked, onChange }) => {
   return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-lg text-white font-medium">{label}</span>
-      <label className="relative inline-flex items-center cursor-pointer">
+    <div className="flex items-center justify-between py-1 sm:py-2">
+      {/* 🌟 変更: スマホ時は文字サイズを text-base に縮小 */}
+      <span className="text-base sm:text-lg text-white font-medium">{label}</span>
+      
+      {/* 🌟 変更: スマホ時はスケールを90%にして少し小さく表示 (scale-90 sm:scale-100) */}
+      <label className="relative inline-flex items-center cursor-pointer scale-90 sm:scale-100 origin-right transition-transform">
         <input
           type="checkbox"
           checked={checked}

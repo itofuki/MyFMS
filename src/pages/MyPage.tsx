@@ -82,6 +82,7 @@ const myPageChapters: ChapterLink[] = [
   { id: 'timetable', label: '時間割' },
   { id: 'assignments', label: '課題' },
   { id: 'study-room', label: '自習室' },
+  { id: 'setting', label: '設定' },
 ];
 
 export default function MyPage() {

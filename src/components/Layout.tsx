@@ -10,6 +10,7 @@ const getChapterIcon = (id: string, size: number = 20) => {
     case 'timetable': return <FiCalendar size={size} />;
     case 'assignments': return <FiFileText size={size} />;
     case 'study-room': return <FiBookOpen size={size} />;
+    case 'setting': return <FiSettings size={size} />;
     default: return <FiFolder size={size} />;
   }
 };
@@ -24,11 +25,17 @@ const SidebarContent: React.FC<{
     onNavigate(id);
     closeMenu();
   };
+  
   return (
     <div className="flex flex-col h-full pt-4 md:pt-6 overflow-y-auto">
       <h2 className="text-lg font-bold text-white light:text-slate-800 mb-6 px-2 transition-colors duration-300">メニュー</h2>
+      
+      {/* 通常のメニュー項目 */}
       <ul className="space-y-2 px-2">
-        {links.map(link => (
+        {/* 🌟 修正: idが 'setting' 以外のものだけを抽出してから map で描画する */}
+        {links
+          .filter(link => link.id !== 'setting')
+          .map(link => (
           <li key={link.id}>
             <button
               onClick={() => handleNavigate(link.id)}
@@ -46,20 +53,26 @@ const SidebarContent: React.FC<{
           </li>
         ))}
       </ul>
-      <div className="mt-6 px-2">
+
+      {/* 🌟 設定項目のブロック (固定で表示) */}
+      <div className="mt-6 px-2 pb-4">
         <hr className="border-t border-white/10 light:border-slate-300 mb-4 transition-colors duration-300" />
+        
         <button 
           onClick={() => handleNavigate('setting')}
-          className={`w-full flex items-center text-left p-3 rounded-lg transition-colors duration-200 text-sm font-medium ${
-            activeId === 'setting' ? 'bg-cyan-500 text-white shadow-lg' : 'text-gray-300 light:text-slate-600 hover:bg-slate-700/80 light:hover:bg-slate-200'
+          className={`w-full flex items-center text-left p-2.5 rounded-lg transition-colors duration-200 ${
+            activeId === 'setting' 
+              ? 'bg-cyan-500 text-white shadow-lg' 
+              : 'text-gray-400 light:text-slate-500 hover:bg-slate-700/80 light:hover:bg-slate-200'
           }`}
         >
           <span className={`${activeId === 'setting' ? 'text-white' : 'text-slate-400 light:text-slate-500'}`}>
-            <FiSettings size={18} className="glowing-gear" />
+            <FiSettings size={18} />
           </span>
           <span className="font-medium text-xs ml-3">設定</span>
         </button>
       </div>
+      
     </div>
   );
 };
@@ -200,17 +213,6 @@ export default function Layout() {
                 </button>
               </li>
             ))}
-            <li className="flex-1">
-              <button
-                onClick={() => setActiveChapter('setting')}
-                className={`w-full flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
-                  activeChapter === 'setting' ? 'text-cyan-400 light:text-cyan-600' : 'text-slate-500'
-                }`}
-              >
-                <FiSettings size={24} />
-                <span className="text-[10px] font-bold">設定</span>
-              </button>
-            </li>
           </ul>
         </nav>
       </div>
