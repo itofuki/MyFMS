@@ -89,6 +89,8 @@ export default function MyPage() {
   const { setChapterLinks, activeChapter, setActiveChapter } = useSidebar();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   // 1
   useEffect(() => {
     setChapterLinks(myPageChapters);
@@ -241,7 +243,7 @@ export default function MyPage() {
       setLoading(false);
     };
     fetchUserTimetable();
-  }, [navigate]);
+  }, [navigate, refreshKey]);
 
   useEffect(() => {
     const todayKey = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'][new Date().getDay() - 1];
@@ -336,7 +338,7 @@ export default function MyPage() {
       case 'study-room':
         return <StudyRoom />;
       case 'setting':
-        return <Setting />;
+        return <Setting onSettingsSaved={() => setRefreshKey(prev => prev + 1)} />;
       default:
         return null;
     }

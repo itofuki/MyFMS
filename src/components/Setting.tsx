@@ -14,8 +14,11 @@ import ChapterFrame from "../components/ChapterFrame";
 type DeptDB = { id: number; name: string; code: string };
 type CourseDB = { id: number; department_id: number; name: string; code: string };
 type ClassDB = { id: number; course_id: number; name: string };
+type SettingProps = {
+  onSettingsSaved?: () => void;
+};
 
-export default function Setting() {
+export default function Setting({ onSettingsSaved }: SettingProps) {
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
@@ -141,6 +144,10 @@ export default function Setting() {
 
       if (error) throw error;
       toast.success("設定を更新しました！");
+
+      if (onSettingsSaved) {
+        onSettingsSaved();
+      }
 
       setSearchParams({ tab: 'timetable' });
     } catch (error: any) {
