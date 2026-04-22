@@ -10,7 +10,7 @@ const Collapsible: FC<Props> = ({ title, children }) => {
     <details className="group border-t border-white/20 py-5">
 
       <summary className="flex cursor-pointer list-none items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-300">{title}</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-300">{title}</h2>
         <div className="text-cyan-400 text-lg sm:text-xl transition-transform duration-300 group-open:-rotate-90">
           ◀
         </div>

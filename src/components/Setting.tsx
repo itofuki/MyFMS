@@ -2,7 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 import { toast } from 'sonner';
 import { FiSettings } from "react-icons/fi";
@@ -17,6 +17,7 @@ type ClassDB = { id: number; course_id: number; name: string };
 
 export default function Setting() {
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   
   const [departmentsDB, setDepartmentsDB] = useState<DeptDB[]>([]);
@@ -140,6 +141,8 @@ export default function Setting() {
 
       if (error) throw error;
       toast.success("設定を更新しました！");
+
+      setSearchParams({ tab: 'timetable' });
     } catch (error: any) {
       toast.error(`エラーが発生しました: ${error.message}`);
     } finally {

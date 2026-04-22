@@ -147,7 +147,7 @@ export default function Layout() {
           />
           {/* メニュー本体 */}
           <div 
-            className={`hidden md:flex lg:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-50 p-4 border-r border-white/10 light:border-slate-200 transition-transform duration-300 ease-out ${
+            className={`hidden md:block lg:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-50 p-4 border-r border-white/10 light:border-slate-200 transition-transform duration-300 ease-out ${
               isMobileMenuOpen ? 'translate-x-0 shadow-[15px_0_30px_rgba(0,0,0,0.5)]' : '-translate-x-full'
             }`}
           >
