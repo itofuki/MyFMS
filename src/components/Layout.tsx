@@ -112,23 +112,44 @@ export default function Layout() {
   return (
     <div 
       ref={containerRef}
-      // 🌟 [dvh] を使い、全体の高さをスマホの見える範囲に固定
       className="h-[100dvh] bg-slate-900 light:bg-slate-50 text-slate-300 light:text-slate-800 overflow-hidden relative overscroll-x-none touch-pan-y transition-colors duration-300"
     >
-      {/* ① スマホ用サイドメニュー */}
+      {/* ① スマホ用サイドメニュー (元のまま: 背面に配置し、メインコンテンツがスライドする) */}
       {chapterLinks.length > 0 && (
         <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-0 p-4 border-r border-white/10 light:border-slate-200">
           <SidebarContent links={chapterLinks} activeId={activeChapter} onNavigate={setActiveChapter} closeMenu={() => setIsMobileMenuOpen(false)} />
         </div>
       )}
 
+      {/* 🌟 追加: タブレット用オーバーレイサイドメニュー (Geminiスタイル) */}
+      {chapterLinks.length > 0 && (
+        <>
+          {/* メニュー外の半透明背景 */}
+          <div 
+            className={`hidden md:block lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-[1px] transition-opacity duration-300 ${
+              isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`} 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            aria-hidden="true" 
+          />
+          {/* メニュー本体 */}
+          <div 
+            className={`hidden md:flex lg:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-50 p-4 border-r border-white/10 light:border-slate-200 transition-transform duration-300 ease-out ${
+              isMobileMenuOpen ? 'translate-x-0 shadow-[15px_0_30px_rgba(0,0,0,0.5)]' : '-translate-x-full'
+            }`}
+          >
+            <SidebarContent links={chapterLinks} activeId={activeChapter} onNavigate={setActiveChapter} closeMenu={() => setIsMobileMenuOpen(false)} />
+          </div>
+        </>
+      )}
+
       {/* ② メイン画面のラッパー */}
       <div 
-        // 🌟 修正: h-screen ではなく h-full を使うことで [dvh] を継承させます
         className={`relative z-10 flex flex-col h-full bg-slate-900 light:bg-slate-50 transition-transform duration-300 ease-out ${
           isMobileMenuOpen ? 'translate-x-80 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.5)]' : 'translate-x-0'
         }`}
       >
+        {/* スマホ用の半透明背景 */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute inset-0 bg-black/40 z-50 backdrop-blur-[1px]" onClick={() => setIsMobileMenuOpen(false)} aria-hidden="true" />
         )}
@@ -137,8 +158,11 @@ export default function Layout() {
         <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 light:bg-white/70 backdrop-blur-lg border-b border-white/10 light:border-slate-200">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
+              {/* 🌟 変更: タブレットでもメニューボタンを表示させるために md:hidden を lg:hidden に変更 */}
               {chapterLinks.length > 0 && (
-                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-slate-300 light:text-slate-600"><FiMenu size={24} /></button>
+                <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-300 light:text-slate-600">
+                  <FiMenu size={24} />
+                </button>
               )}
               <Link to="/" className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-500 to-purple-500">MyFMS</Link>
             </div>
@@ -146,11 +170,11 @@ export default function Layout() {
         </nav>
 
         {/* コンテンツエリア */}
-        {/* 🌟 修正: pb-20 md:pb-0 でボトムナビの場所を確保 */}
         <div className="flex-1 overflow-y-auto w-full pb-20 md:pb-0">
           <div className="flex w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+            {/* 🌟 変更: PC用静的サイドメニューの表示を md:flex から lg:flex に変更 */}
             {chapterLinks.length > 0 && (
-              <aside className="hidden md:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-slate-900/60 light:bg-white/60 border-r border-white/10 light:border-slate-200 p-4 pt-16 flex-col justify-between z-10">
+              <aside className="hidden lg:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-slate-900/60 light:bg-white/60 border-r border-white/10 light:border-slate-200 p-4 pt-16 flex-col justify-between z-10">
                 <SidebarContent links={chapterLinks} activeId={activeChapter} onNavigate={setActiveChapter} closeMenu={() => {}} />
               </aside>
             )}
@@ -160,8 +184,7 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* ③ ボトムナビゲーション */}
-        {/* 🌟 修正: env(safe-area-inset-bottom) を使って、iPhone等の画面下の棒を避ける */}
+        {/* ③ ボトムナビゲーション (元のまま: スマホのみ表示) */}
         <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-slate-900/95 light:bg-white/95 backdrop-blur-md border-t border-slate-700/50 light:border-slate-200 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <ul className="flex justify-around items-center h-14 px-1">
             {chapterLinks.map(link => (
