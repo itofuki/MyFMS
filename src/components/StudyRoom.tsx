@@ -115,14 +115,14 @@ const StudyRoom = () => {
         <div className="flex justify-center items-center gap-3 w-full">
           <FiBookOpen className="text-cyan-400 text-2xl sm:text-3xl" />
           <span className="font-orbitron font-bold text-cyan-300 text-glow text-xl sm:text-3xl">
-            自習室・談話室
+            自習室
           </span>
         </div>
       }
     >
       <div className="flex flex-col items-center justify-center p-2">
         
-        <div className="w-full max-w-2xl bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 md:p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+        <div className="w-full max-w-2xl min-w-[340px] md:min-w-[600px] bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 md:p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
           <div className="flex items-center justify-center mb-6 text-cyan-300">
             {/* ★ ここを時間割と同じ、スタイリッシュなベースライン揃えのデザインに変更 */}
             <h3 className="font-bold text-glow">
@@ -143,28 +143,46 @@ const StudyRoom = () => {
             </h3>
           </div>
           
-          {currentRooms ? (
-            /* スマホは gap-2、PC(md以上)は元の gap-4 */
-            <div className="grid grid-cols-2 gap-2 md:gap-4">
-              
-              <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700">
-                <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
-                <p className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.study}</p>
+          {/* ▼ 修正ここから：条件分岐を外し、枠を常に表示する */}
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
+            
+            {/* --- 自習室 --- */}
+            <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
+              <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
+              <div className="flex-1 flex items-center justify-center">
+                {todaySchedule === null ? (
+                  <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
+                ) : currentRooms ? (
+                  <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.study}</span>
+                ) : (
+                  <span className="text-slate-500 text-sm">-</span>
+                )}
               </div>
-
-              <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700">
-                <p className="text-slate-400 text-xs md:text-sm mb-1">談話室</p>
-                <p className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</p>
-              </div>
-
             </div>
-          ) : (
-            <p className="text-center text-slate-300 py-4 text-sm md:text-base">
-              {todaySchedule === null 
-                ? "データを読み込み中..." 
-                : "現在開放されている部屋はありません"}
+
+            {/* --- 談話室 --- */}
+            <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
+              <p className="text-slate-400 text-xs md:text-sm mb-1">談話室</p>
+              <div className="flex-1 flex items-center justify-center">
+                {todaySchedule === null ? (
+                  <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
+                ) : currentRooms ? (
+                  <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</span>
+                ) : (
+                  <span className="text-slate-500 text-sm">-</span>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* 授業時間外などで部屋が開放されていない場合のメッセージ */}
+          {todaySchedule !== null && !currentRooms && (
+            <p className="text-center text-slate-400 mt-4 text-sm md:text-base">
+              現在開放されている部屋はありません
             </p>
           )}
+          {/* ▲ 修正ここまで */}
         </div>
 
         <div className="w-full max-w-2xl my-2 rounded-md flex justify-center items-center min-h-[150px]">

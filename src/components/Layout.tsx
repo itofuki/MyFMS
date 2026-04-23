@@ -125,7 +125,7 @@ export default function Layout() {
   return (
     <div 
       ref={containerRef}
-      className="h-[100dvh] bg-slate-900 light:bg-slate-50 text-slate-300 light:text-slate-800 overflow-hidden relative overscroll-x-none touch-pan-y transition-colors duration-300"
+      className="fixed inset-0 w-full h-full bg-slate-900 light:bg-slate-50 text-slate-300 light:text-slate-800 overflow-hidden overscroll-none touch-pan-y transition-colors duration-300"
     >
       {/* ① スマホ用サイドメニュー (元のまま: 背面に配置し、メインコンテンツがスライドする) */}
       {chapterLinks.length > 0 && (
