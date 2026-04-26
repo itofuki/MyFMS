@@ -5,6 +5,7 @@ import ChapterFrame from './ChapterFrame';
 import { FiBookOpen } from 'react-icons/fi';
 import { supabase } from '../lib/supabaseClient';
 import AdminStudyRoom from './AdminStudyRoom';
+import { useQuery } from '@tanstack/react-query'; // 🌟 追加
 
 interface RoomSchedule {
   study: string;
@@ -12,10 +13,6 @@ interface RoomSchedule {
 }
 
 const StudyRoom = () => {
-  const [imagePath, setImagePath] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [todaySchedule, setTodaySchedule] = useState<Record<number, RoomSchedule> | null>(null);
-  
   // ★ 時間割(Timetable)と同じく、1分ごとに更新される時間ステート
   const [currentTime, setCurrentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
 
@@ -43,10 +40,10 @@ const StudyRoom = () => {
 
   const currentPeriod = calculateCurrentPeriod(currentTime);
 
-  useEffect(() => {
-    // 1. スケジュール画像（全体像）を取得
-    const fetchSignedUrl = async () => {
-      setIsLoading(true);
+  // 🌟 React Query: スケジュール画像の取得
+  const { data: imagePath, isLoading: isLoadingImage } = useQuery({
+    queryKey: ['studyRoomImage'],
+    queryFn: async () => {
       const today = new Date();
       const month = today.getMonth() + 1;
       const mday = today.getDate();
@@ -60,15 +57,19 @@ const StudyRoom = () => {
 
       if (error) {
         console.error('画像の取得に失敗しました:', error.message);
-        setImagePath('/images/fallback-image.webp');
-      } else if (data) {
-        setImagePath(data.signedUrl);
+        return '/images/fallback-image.webp';
       }
-      setIsLoading(false);
-    };
+      return data.signedUrl;
+    },
+    // Signed URLの有効期限が1時間（3600秒）なので、55分間キャッシュを保持
+    staleTime: 1000 * 60 * 55, 
+  });
 
-    // 2. DBから「今日のスケジュールデータ」を取得
-    const fetchTodaySchedule = async () => {
+  // 🌟 React Query: DBからの「今日のスケジュールデータ」を取得
+  const { data: todaySchedule, isLoading: isLoadingSchedule } = useQuery({
+    // 日付が変わったらキャッシュを無効化して再フェッチされるように、Query Keyに日付を含める
+    queryKey: ['todaySchedule', new Date().toLocaleDateString('ja-JP')], 
+    queryFn: async () => {
       const today = new Date();
       const yyyy = today.getFullYear();
       const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -82,22 +83,20 @@ const StudyRoom = () => {
 
       if (error) {
         console.error('DBからのスケジュール取得に失敗しました:', error.message);
-        setTodaySchedule({}); 
-      } else if (data) {
-        const formattedSchedule: Record<number, RoomSchedule> = {};
-        data.forEach((row) => {
-          formattedSchedule[row.period] = {
-            study: row.study_rooms,
-            talk: row.talk_rooms
-          };
-        });
-        setTodaySchedule(formattedSchedule);
+        return {}; 
       }
-    };
 
-    fetchSignedUrl();
-    fetchTodaySchedule();
-  }, []);
+      const formattedSchedule: Record<number, RoomSchedule> = {};
+      data.forEach((row) => {
+        formattedSchedule[row.period] = {
+          study: row.study_rooms,
+          talk: row.talk_rooms
+        };
+      });
+      return formattedSchedule;
+    },
+    staleTime: 1000 * 60 * 60, // 1時間キャッシュ
+  });
 
   const currentRooms = currentPeriod && todaySchedule ? todaySchedule[currentPeriod] : null;
 
@@ -124,7 +123,6 @@ const StudyRoom = () => {
         
         <div className="w-full max-w-2xl min-w-[340px] md:min-w-[600px] bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 md:p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
           <div className="flex items-center justify-center mb-6 text-cyan-300">
-            {/* ★ ここを時間割と同じ、スタイリッシュなベースライン揃えのデザインに変更 */}
             <h3 className="font-bold text-glow">
               <span className="flex items-baseline justify-center">
                 <span className="text-2xl md:text-4xl">{month}</span>
@@ -143,14 +141,13 @@ const StudyRoom = () => {
             </h3>
           </div>
           
-          {/* ▼ 修正ここから：条件分岐を外し、枠を常に表示する */}
           <div className="grid grid-cols-2 gap-2 md:gap-4">
             
             {/* --- 自習室 --- */}
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
               <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
               <div className="flex-1 flex items-center justify-center">
-                {todaySchedule === null ? (
+                {isLoadingSchedule ? (
                   <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
                 ) : currentRooms ? (
                   <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.study}</span>
@@ -164,7 +161,7 @@ const StudyRoom = () => {
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
               <p className="text-slate-400 text-xs md:text-sm mb-1">談話室</p>
               <div className="flex-1 flex items-center justify-center">
-                {todaySchedule === null ? (
+                {isLoadingSchedule ? (
                   <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
                 ) : currentRooms ? (
                   <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</span>
@@ -177,16 +174,15 @@ const StudyRoom = () => {
           </div>
 
           {/* 授業時間外などで部屋が開放されていない場合のメッセージ */}
-          {todaySchedule !== null && !currentRooms && (
+          {todaySchedule !== undefined && !currentRooms && !isLoadingSchedule && (
             <p className="text-center text-slate-400 mt-4 text-sm md:text-base">
               現在開放されている部屋はありません
             </p>
           )}
-          {/* ▲ 修正ここまで */}
         </div>
 
         <div className="w-full max-w-2xl my-2 rounded-md flex justify-center items-center min-h-[150px]">
-          {isLoading ? (
+          {isLoadingImage ? (
             <span className="text-slate-400 animate-pulse">スケジュール画像を読み込み中...</span>
           ) : (
             imagePath && (

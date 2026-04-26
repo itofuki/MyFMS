@@ -6,12 +6,9 @@ import type { Session } from '@supabase/supabase-js';
 
 const AdminStudyRoom = () => {
   const [session, setSession] = useState<Session | null>(null);
-  // ★ 管理者かどうかを判定するステートを追加
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isCheckingRole, setIsCheckingRole] = useState<boolean>(false);
+  const [isCheckingRole, setIsCheckingRole] = useState<boolean>(true); // 初期値をtrueに変更（チラつき防止）
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState('');
@@ -40,6 +37,7 @@ const AdminStudyRoom = () => {
         setIsCheckingRole(false);
       } else {
         setIsAdmin(false);
+        setIsCheckingRole(false);
       }
     };
 
@@ -55,24 +53,6 @@ const AdminStudyRoom = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('ログイン中...');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setMessage(`❌ ログイン失敗: ${error.message}`);
-    } else {
-      setMessage('');
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setMessage('');
-    setEmail('');
-    setPassword('');
-  };
 
   // 4. アップロード＆AI処理
   const handleUploadAndProcess = async () => {
@@ -131,68 +111,17 @@ const AdminStudyRoom = () => {
   // UIの表示分岐
   // ----------------------------------------------------
 
-  // ① 未ログインの場合：ログインフォーム
-  if (!session) {
-    return (
-      <div className="max-w-md mx-auto p-6 bg-slate-800 rounded-xl border border-slate-700 shadow-lg text-slate-200 mt-10">
-        <h2 className="text-xl font-bold text-cyan-400 mb-6 font-orbitron">管理者ログイン</h2>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input 
-            type="email" 
-            placeholder="メールアドレス" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)}
-            className="p-2 rounded bg-slate-900 border border-slate-600 focus:border-cyan-400 outline-none"
-            required
-          />
-          <input 
-            type="password" 
-            placeholder="パスワード" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)}
-            className="p-2 rounded bg-slate-900 border border-slate-600 focus:border-cyan-400 outline-none"
-            required
-          />
-          <button type="submit" className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded transition-colors">
-            ログイン
-          </button>
-        </form>
-        {message && <div className="mt-4 text-red-400 text-sm">{message}</div>}
-      </div>
-    );
+  // 管理者権限の確認中、未ログイン、または管理者ではない場合は何も表示しない
+  if (isCheckingRole || !session || !isAdmin) {
+    return null;
   }
 
-  // ② ログインしているが、権限チェック中の場合
-  if (isCheckingRole) {
-    return (
-      <div className="max-w-md mx-auto p-6 text-center text-slate-300 mt-10">
-        <p className="animate-pulse">権限を確認しています...</p>
-      </div>
-    );
-  }
-
-  // ③ ログインしているが、管理者(admin)ではない場合
-  if (!isAdmin) {
-    return (
-      <div className="max-w-md mx-auto p-6 bg-slate-800 rounded-xl border border-slate-700 shadow-lg text-slate-200 mt-10 text-center">
-        <div className="text-red-400 text-5xl mb-4">⚠️</div>
-        <h2 className="text-xl font-bold text-white mb-2">アクセス拒否</h2>
-        <p className="text-slate-400 mb-6 text-sm">このページは管理者専用です。</p>
-        <button onClick={handleLogout} className="bg-slate-700 hover:bg-slate-600 text-white py-2 px-6 rounded transition-colors">
-          ログアウトして戻る
-        </button>
-      </div>
-    );
-  }
-
-  // ④ ログイン済み ＆ 管理者(admin)の場合：アップロード画面
+  // 管理者(admin)の場合のみアップロード画面を表示
   return (
     <div className="max-w-xl mx-auto p-6 bg-slate-800 rounded-xl border border-slate-700 shadow-lg text-slate-200 mt-10">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-cyan-400 font-orbitron">時間割アップロード</h2>
-        <button onClick={handleLogout} className="text-sm text-slate-400 hover:text-white underline">
-          ログアウト
-        </button>
+        {/* ログアウトボタンを削除しました */}
       </div>
       
       <div className="mb-6">

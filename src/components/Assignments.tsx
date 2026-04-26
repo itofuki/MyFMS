@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import ChapterFrame from './ChapterFrame';
 import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiFileText, FiTool, FiLink, FiEdit2, FiX } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { TextInput, Select, Button, Group, Checkbox, useMantineTheme, SimpleGrid } from '@mantine/core';
 import { DatePickerInput, type DayProps } from '@mantine/dates';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import 'dayjs/locale/ja';
 import type { User } from '@supabase/supabase-js';
 
@@ -117,17 +118,10 @@ const getBadgeStyle = (type: string, isDone: boolean) => {
 
 const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   const theme = useMantineTheme();
-  
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>('user');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
+
+  // --- ローカルステート ---
   const [isAdminMode, setIsAdminMode] = useState(false);
-
-  const [lmsEvents, setLmsEvents] = useState<LmsEvent[]>([]);
-  const [dbSubjects, setDbSubjects] = useState<DbSubject[]>([]);
-  const [lmsStatuses, setLmsStatuses] = useState<LmsStatus[]>([]);
-
   const [editingId, setEditingId] = useState<number | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -137,74 +131,188 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   const [newSubjectId, setNewSubjectId] = useState<string | null>(null);
   const [newUrl, setNewUrl] = useState('');
 
-  const fetchAssignments = async () => {
-    const { data, error } = await supabase.rpc('get_user_assignments');
-    if (error) { console.error('Error fetching assignments:', error); setAssignments([]); }
-    else if (data) { setAssignments(data as Assignment[]); }
-  };
-
-  const fetchLmsEvents = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-lms-calendar');
-      if (error) throw error;
-      if (data && data.events) {
-        setLmsEvents(data.events);
-      }
-    } catch (err) {
-      console.error("LMSカレンダー取得エラー:", err);
-    }
-  };
-
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setLoading(true);
+  // --- React Queryによるデータ取得 ---
+  // 🌟 User型を明示的に指定
+  const { data: currentUser, isLoading: isLoadingUser } = useQuery<User | null>({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
-      
-      const fetchDbSubjects = async () => {
-        const { data, error } = await supabase
-          .from('subjects')
-          .select(`
-            id, 
-            category_code,
-            subject_classes (subject_id),
-            subject_departments (subject_id),
-            subject_courses (subject_id)
-          `);
-          
-        if (!error && data) {
-          setDbSubjects(data as DbSubject[]);
-        } else if (error) {
-          console.error("subjectsテーブルのJOIN取得エラー:", error);
-        }
-      };
+      return user;
+    },
+    staleTime: Infinity,
+  });
 
-      let fetches: Promise<any>[] = [
-        fetchAssignments(),
-        fetchLmsEvents(),
-        fetchDbSubjects()
-      ];
+  const { data: userRole = 'user', isLoading: isLoadingRole } = useQuery({
+    queryKey: ['userRole', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser) return 'user';
+      const { data } = await supabase.from('profiles').select('role').eq('user_id', currentUser.id).single();
+      return data?.role || 'user';
+    },
+    enabled: !!currentUser?.id,
+  });
 
-      if (user) {
-        const fetchUserProfile = async () => {
-          const { data: profileData } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
-          if (profileData) setUserRole(profileData.role);
-        };
-        const fetchLmsStatuses = async () => {
-          const { data, error } = await supabase.from('lms_assignment_status').select('lms_uid, done').eq('user_id', user.id);
-          if (!error && data) setLmsStatuses(data);
-        };
-
-        fetches.push(fetchUserProfile());
-        fetches.push(fetchLmsStatuses());
+  const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery<Assignment[]>({
+    queryKey: ['assignments'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_user_assignments');
+      if (error) {
+        console.error('Error fetching assignments:', error);
+        return [];
       }
-      
-      await Promise.all(fetches);
-      setLoading(false);
-    };
-    fetchInitialData();
-  }, []);
+      return data as Assignment[];
+    }
+  });
 
+  // 🌟 LmsEvent型の配列であることを明示的に指定
+  const { data: lmsEvents = [], isLoading: isLoadingLmsEvents } = useQuery<LmsEvent[]>({
+    queryKey: ['lmsEvents'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('get-lms-calendar');
+      if (error) {
+        console.error("LMSカレンダー取得エラー:", error);
+        return [];
+      }
+      return data?.events || [];
+    }
+  });
+
+  const { data: dbSubjects = [], isLoading: isLoadingDbSubjects } = useQuery<DbSubject[]>({
+    queryKey: ['dbSubjects'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select(`
+          id, 
+          category_code,
+          subject_classes (subject_id),
+          subject_departments (subject_id),
+          subject_courses (subject_id)
+        `);
+      if (error) {
+        console.error("subjectsテーブルのJOIN取得エラー:", error);
+        return [];
+      }
+      return data as DbSubject[];
+    }
+  });
+
+  const { data: lmsStatuses = [], isLoading: isLoadingLmsStatuses } = useQuery<LmsStatus[]>({
+    queryKey: ['lmsStatuses', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser) return [];
+      const { data, error } = await supabase.from('lms_assignment_status').select('lms_uid, done').eq('user_id', currentUser.id);
+      if (error) return [];
+      return data as LmsStatus[];
+    },
+    enabled: !!currentUser?.id,
+  });
+
+  const loading = isLoadingUser || isLoadingRole || isLoadingAssignments || isLoadingLmsEvents || isLoadingDbSubjects || isLoadingLmsStatuses;
+
+  // --- React Queryによるデータ更新 (Mutations) ---
+  
+  // 課題の追加・更新
+  const upsertMutation = useMutation({
+    mutationFn: async (payload: { isEdit: boolean, data: any, id?: number }) => {
+      if (payload.isEdit) {
+        const { error } = await supabase.from('assignment').update(payload.data).eq('id', payload.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('assignment').insert(payload.data);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    },
+    onError: (error) => {
+      console.error('Error saving assignment:', error);
+      alert('課題の保存に失敗しました。権限がありません。');
+    }
+  });
+
+  // 課題の削除
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from('assignment').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.setQueryData(['assignments'], (old: Assignment[] | undefined) => {
+        if (!old) return old;
+        return old.filter(a => a.id !== id);
+      });
+      if (editingId === id) resetForm();
+    },
+    onError: (error) => {
+      console.error('Error deleting assignment:', error);
+      alert('課題の削除に失敗しました。');
+    }
+  });
+
+  // DB課題のトグル (楽観的更新)
+  const toggleDbMutation = useMutation({
+    mutationFn: async ({ assignmentId, newStatus, userId }: { assignmentId: number, newStatus: boolean, userId: string }) => {
+      const { error } = await supabase.from('assignment_status').upsert(
+        { user_id: userId, assignment_id: assignmentId, done: newStatus }, 
+        { onConflict: 'user_id, assignment_id' }
+      );
+      if (error) throw error;
+    },
+    onMutate: async ({ assignmentId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['assignments'] });
+      const previous = queryClient.getQueryData(['assignments']);
+      queryClient.setQueryData(['assignments'], (old: Assignment[] | undefined) => {
+        if (!old) return old;
+        return old.map(assign => assign.id === assignmentId ? { ...assign, done: newStatus } : assign);
+      });
+      return { previous };
+    },
+    // 🌟 未使用引数 variables を _variables に変更
+    onError: (error, _variables, context) => {
+      console.error('Error updating status:', error);
+      if (context?.previous) queryClient.setQueryData(['assignments'], context.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments'] });
+    }
+  });
+
+  // LMS課題のトグル (楽観的更新)
+  const toggleLmsMutation = useMutation({
+    mutationFn: async ({ assignmentId, newStatus, userId }: { assignmentId: string, newStatus: boolean, userId: string }) => {
+      const { error } = await supabase.from('lms_assignment_status').upsert(
+        { user_id: userId, lms_uid: assignmentId, done: newStatus }, 
+        { onConflict: 'user_id, lms_uid' }
+      );
+      if (error) throw error;
+    },
+    onMutate: async ({ assignmentId, newStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['lmsStatuses', currentUser?.id] });
+      const previous = queryClient.getQueryData(['lmsStatuses', currentUser?.id]);
+      queryClient.setQueryData(['lmsStatuses', currentUser?.id], (old: LmsStatus[] | undefined) => {
+        if (!old) return [{ lms_uid: assignmentId, done: newStatus }];
+        const existing = old.find(s => s.lms_uid === assignmentId);
+        if (existing) return old.map(s => s.lms_uid === assignmentId ? { ...s, done: newStatus } : s);
+        return [...old, { lms_uid: assignmentId, done: newStatus }];
+      });
+      return { previous };
+    },
+    // 🌟 未使用引数 variables を _variables に変更
+    onError: (error, _variables, context) => {
+      console.error('Error updating LMS status:', error);
+      alert('ステータスの更新に失敗しました。');
+      if (context?.previous) queryClient.setQueryData(['lmsStatuses', currentUser?.id], context.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['lmsStatuses', currentUser?.id] });
+    }
+  });
+
+  // --- イベントハンドラー ---
   const getDayProps = (dateString: string): Partial<DayProps> => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
@@ -249,13 +357,14 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }, 100);
   };
 
-  const handleAddOrUpdateAssignment = async (e: React.FormEvent) => {
+  const handleAddOrUpdateAssignment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser || !newName || !newDate) return;
     const datePart = format(newDate, 'yyyy-MM-dd');
     const timePart = newTime || '23:59';
     const deadlineForSupabase = new Date(`${datePart}T${timePart}:00`).toISOString();
     const isOfficial = isAdminMode && userRole === 'admin';
+    
     if (editingId) {
       const updatePayload = {
         name: newName,
@@ -263,14 +372,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
         subject_id: newSubjectId ? parseInt(newSubjectId, 10) : null,
         url: newUrl || null,
       };
-      const { error } = await supabase.from('assignment').update(updatePayload).eq('id', editingId);
-      if (!error) {
-        resetForm();
-        await fetchAssignments();
-      } else {
-        console.error('Error updating assignment:', error);
-        alert('課題の更新に失敗しました。');
-      }
+      upsertMutation.mutate({ isEdit: true, id: editingId, data: updatePayload });
     } else {
       const newAssignment = {
         name: newName,
@@ -280,61 +382,24 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
         user_id: currentUser.id,
         url: newUrl || null,
       };
-      const { error } = await supabase.from('assignment').insert(newAssignment);
-      if (!error) {
-        resetForm();
-        await fetchAssignments();
-      } else {
-        console.error('Error adding assignment:', error);
-        alert('課題の追加に失敗しました。権限がありません。');
-      }
+      upsertMutation.mutate({ isEdit: false, data: newAssignment });
     }
   };
   
-  const handleToggleDone = async (assignmentId: number | string, currentStatus: boolean, isLms: boolean) => {
+  const handleToggleDone = (assignmentId: number | string, currentStatus: boolean, isLms: boolean) => {
     if (!currentUser) return;
     const newStatus = !currentStatus;
     if (isLms) {
-      setLmsStatuses(prev => {
-        const existing = prev.find(s => s.lms_uid === assignmentId);
-        if (existing) {
-          return prev.map(s => s.lms_uid === assignmentId ? { ...s, done: newStatus } : s);
-        }
-        return [...prev, { lms_uid: assignmentId as string, done: newStatus }];
-      });
-      const { error } = await supabase.from('lms_assignment_status').upsert(
-        { user_id: currentUser.id, lms_uid: assignmentId as string, done: newStatus }, 
-        { onConflict: 'user_id, lms_uid' }
-      );
-      if (error) {
-        console.error('Error updating LMS status:', error);
-        alert('ステータスの更新に失敗しました。');
-        setLmsStatuses(prev => prev.map(s => s.lms_uid === assignmentId ? { ...s, done: currentStatus } : s));
-      }
+      toggleLmsMutation.mutate({ assignmentId: assignmentId as string, newStatus, userId: currentUser.id });
     } else {
-      setAssignments(prev => prev.map(assign => assign.id === assignmentId ? { ...assign, done: newStatus } : assign));
-      const { error } = await supabase.from('assignment_status').upsert(
-        { user_id: currentUser.id, assignment_id: assignmentId as number, done: newStatus }, 
-        { onConflict: 'user_id, assignment_id' }
-      );
-      if (error) {
-        console.error('Error updating status:', error);
-        setAssignments(prev => prev.map(assign => assign.id === assignmentId ? { ...assign, done: currentStatus } : assign));
-      }
+      toggleDbMutation.mutate({ assignmentId: assignmentId as number, newStatus, userId: currentUser.id });
     }
   };
 
-  const handleDeleteAssignment = async (id: number | string, isLms: boolean) => {
+  const handleDeleteAssignment = (id: number | string, isLms: boolean) => {
     if (isLms) return; 
     if (!window.confirm("本当にこの課題を削除しますか？")) return;
-    const { error } = await supabase.from('assignment').delete().eq('id', id as number);
-    if (error) {
-      console.error('Error deleting assignment:', error);
-      alert('課題の削除に失敗しました。');
-    } else {
-      setAssignments(prev => prev.filter(a => a.id !== id));
-      if (editingId === id) resetForm(); 
-    }
+    deleteMutation.mutate(id as number);
   };
 
   const getAssignmentStyles = (assignment: UnifiedAssignment): string => {
@@ -452,7 +517,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
                   return (
                     <div key={assignment.id} className={`p-4 rounded-lg flex transition-all duration-300 ${getAssignmentStyles(assignment)} ring-cyan-500 ${editingId === assignment.id ? 'ring-2' : ''} items-center`}>
-                      {/* 🌟 チェックボックス：flex-shrink-0でサイズを固定 */}
                       <Checkbox
                         checked={assignment.done}
                         onChange={() => handleToggleDone(assignment.id, assignment.done, assignment.isLms)}
@@ -460,9 +524,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                         className="flex-shrink-0"
                       />
                       
-                      {/* 🌟 メインコンテンツ：タイトル・説明文など全てを包含 */}
                       <div className="ml-4 w-full min-w-0 flex flex-col gap-1">
-                        {/* 上段：教科名・締め切り */}
                         <div className="flex justify-between items-center w-full gap-2">
                           <span className={`text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border inline-block truncate max-w-full transition-colors duration-300 ${getBadgeStyle(assignment.subjectCategoryType, assignment.done)}`}>
                             {assignment.subject_name || '未分類'}
@@ -474,7 +536,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                           </div>
                         </div>
 
-                        {/* --- 下段：タイトル(左) と 操作ボタン(右下) --- */}
                         <div className="flex justify-between items-end w-full gap-4">
                           <div className="flex items-center gap-2 flex-wrap min-w-0">
                             {assignment.url ? (
@@ -482,7 +543,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                                 href={assignment.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer" 
-                                /* 🌟 text-slate-100 に統一。完了時は line-through と text-slate-500 を適用 */
                                 className={`font-semibold text-base sm:text-lg truncate hover:underline transition-colors flex items-center gap-2 ${
                                   assignment.done ? 'text-slate-500 line-through' : 'text-slate-100'
                                 }`}
@@ -491,7 +551,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                               </a>
                             ) : (
                               <p 
-                                /* 🌟 text-slate-100 に統一 */
                                 className={`font-semibold text-base sm:text-lg truncate transition-colors flex items-center gap-2 ${
                                   assignment.done ? 'text-slate-500 line-through' : 'text-slate-100'
                                 }`}
@@ -502,7 +561,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                             )}
                           </div>
 
-                          {/* ...以下、ボタン部分... */}
                           {canDelete && (
                             <div className="flex items-center gap-1 flex-shrink-0">
                               <button onClick={() => handleEditClick(assignment)} className="p-1.5 text-slate-500 hover:text-cyan-400 hover:bg-slate-700/50 rounded-md transition-colors"><FiEdit2 size={16}/></button>
@@ -511,7 +569,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                           )}
                         </div>
 
-                        {/* 🌟 説明文：メインコンテンツ（flex-col）の一部として配置 */}
                         {assignment.isLms && assignment.description && (
                           <div 
                             className="mt-2 text-xs text-slate-300 line-clamp-2 prose prose-invert prose-sm whitespace-pre-wrap"
