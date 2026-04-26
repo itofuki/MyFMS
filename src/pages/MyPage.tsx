@@ -12,6 +12,7 @@ import { TimetableContainer, type Day, type Subject } from '../components/Timeta
 import StudyRoom from '../components/StudyRoom';
 import Assignments from '../components/Assignments';
 import Setting from '../components/Setting';
+import Feedback from '../components/Feedback';
 
 // =================================================================
 // 型定義と共通データ
@@ -38,7 +39,7 @@ type TimetableRpcData = {
   wday: string;
   period: number;
   classroom: string;
-  category_code: string; // 🌟 DBのカラム名を追加
+  category_code: string; 
 };
 
 type CourseStyle = {
@@ -83,6 +84,7 @@ const myPageChapters: ChapterLink[] = [
   { id: 'timetable', label: '時間割' },
   { id: 'assignments', label: '課題' },
   { id: 'study-room', label: '自習室' },
+  { id: 'feedback', label: 'ご意見' },
   { id: 'setting', label: '設定' },
 ];
 
@@ -92,16 +94,18 @@ export default function MyPage() {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // 1
+  // 1. チャプターのセット（画面幅に関係なく全て渡す）
   useEffect(() => {
     setChapterLinks(myPageChapters);
+
+    // コンポーネントアンマウント時のクリーンアップ
     return () => {
       setChapterLinks([]);
       setActiveChapter('');
     };
   }, [setChapterLinks, setActiveChapter]);
 
-  // 2
+  // 2. URLからの初期タブ設定
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     
@@ -114,7 +118,7 @@ export default function MyPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // 3
+  // 3. activeChapterが変更されたらURLに反映
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     
@@ -147,7 +151,7 @@ export default function MyPage() {
     .map(subject => ({
       id: parseInt(subject.id.split('-')[0], 10),
       name: subject.name,
-      categoryCode: subject.categoryCode, // 🌟 Assignmentsに渡すために追加
+      categoryCode: subject.categoryCode, 
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
@@ -171,7 +175,6 @@ export default function MyPage() {
       setUser(user);
       const [timetableRes, profileRes] = await Promise.all([
         supabase.rpc('get_user_timetable', { p_user_id: user.id }),
-        // profiles -> classes -> courses を辿って名前を取得！
         supabase.from("profiles").select(`
           auto_open,
           classes (
@@ -194,21 +197,17 @@ export default function MyPage() {
       } else {
         const profileData = profileRes.data as any;
         
-        // 🌟 修正ポイント：データが配列でもオブジェクトでも確実に取り出せるようにする 🌟
         let courseNameValue = null;
         
         if (profileData && profileData.classes) {
-          // classes が配列なら最初の要素を、オブジェクトならそのまま使う
           const cls = Array.isArray(profileData.classes) ? profileData.classes[0] : profileData.classes;
           
           if (cls && cls.courses) {
-            // courses も同様に処理
             const crs = Array.isArray(cls.courses) ? cls.courses[0] : cls.courses;
             courseNameValue = crs?.name;
           }
         }
         
-        // 取り出したコース名（'AI' や 'IoT' など）をセット
         if (courseNameValue) {
           setCourseName(courseNameValue);
           setIsProfileSet(true);
@@ -232,7 +231,7 @@ export default function MyPage() {
               wday: day,
               period: subject.period,
               classroom: subject.classroom,
-              categoryCode: subject.category_code, // 🌟 RPCから取得した値を入れる
+              categoryCode: subject.category_code, 
             });
           }
           return acc;
@@ -340,6 +339,8 @@ export default function MyPage() {
         return <Assignments subject={uniqueSubjects} />;
       case 'study-room':
         return <StudyRoom />;
+      case 'feedback':
+        return <Feedback />;
       case 'setting':
         return <Setting onSettingsSaved={() => setRefreshKey(prev => prev + 1)} />;
       default:

@@ -3,7 +3,7 @@ import { useRef, useEffect } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext"; 
-import { FiMenu, FiSettings, FiCalendar, FiFileText, FiBookOpen, FiFolder } from "react-icons/fi";
+import { FiMenu, FiSettings, FiCalendar, FiFileText, FiBookOpen, FiFolder, FiMessageSquare } from "react-icons/fi";
 
 const getChapterIcon = (id: string, size: number = 20) => {
   switch (id) {
@@ -11,6 +11,7 @@ const getChapterIcon = (id: string, size: number = 20) => {
     case 'assignments': return <FiFileText size={size} />;
     case 'study-room': return <FiBookOpen size={size} />;
     case 'setting': return <FiSettings size={size} />;
+    case 'feedback': return <FiMessageSquare size={size} />;
     default: return <FiFolder size={size} />;
   }
 };
@@ -26,16 +27,18 @@ const SidebarContent: React.FC<{
     closeMenu();
   };
   
+  // 下部に配置するメニューのIDリスト
+  const bottomLinkIds = ['feedback', 'setting'];
+  const topLinks = links.filter(link => !bottomLinkIds.includes(link.id));
+  const bottomLinks = links.filter(link => bottomLinkIds.includes(link.id));
+
   return (
     <div className="flex flex-col h-full pt-4 md:pt-6 overflow-y-auto">
       <h2 className="text-lg font-bold text-white light:text-slate-800 mb-6 px-2 transition-colors duration-300">メニュー</h2>
       
-      {/* 通常のメニュー項目 */}
+      {/* 通常のメニュー項目（🌟 画面下部に押しやる flex-1 を削除しました） */}
       <ul className="space-y-2 px-2">
-        {/* 🌟 修正: idが 'setting' 以外のものだけを抽出してから map で描画する */}
-        {links
-          .filter(link => link.id !== 'setting')
-          .map(link => (
+        {topLinks.map(link => (
           <li key={link.id}>
             <button
               onClick={() => handleNavigate(link.id)}
@@ -54,24 +57,32 @@ const SidebarContent: React.FC<{
         ))}
       </ul>
 
-      {/* 🌟 設定項目のブロック (固定で表示) */}
-      <div className="mt-6 px-2 pb-4">
-        <hr className="border-t border-white/10 light:border-slate-300 mb-4 transition-colors duration-300" />
-        
-        <button 
-          onClick={() => handleNavigate('setting')}
-          className={`w-full flex items-center text-left p-2.5 rounded-lg transition-colors duration-200 ${
-            activeId === 'setting' 
-              ? 'bg-cyan-500 text-white shadow-lg' 
-              : 'text-gray-400 light:text-slate-500 hover:bg-slate-700/80 light:hover:bg-slate-200'
-          }`}
-        >
-          <span className={`${activeId === 'setting' ? 'text-white' : 'text-slate-400 light:text-slate-500'}`}>
-            <FiSettings size={18} />
-          </span>
-          <span className="font-medium text-xs ml-3">設定</span>
-        </button>
-      </div>
+      {/* 設定やご意見のブロック（すぐ下に配置されるように mt-4 に調整） */}
+      {bottomLinks.length > 0 && (
+        <div className="mt-4 px-2 pb-4">
+          <hr className="border-t border-white/10 light:border-slate-300 mb-4 transition-colors duration-300" />
+          
+          <ul className="space-y-2">
+            {bottomLinks.map(link => (
+              <li key={link.id}>
+                <button 
+                  onClick={() => handleNavigate(link.id)}
+                  className={`w-full flex items-center text-left p-2.5 rounded-lg transition-colors duration-200 ${
+                    activeId === link.id 
+                      ? 'bg-cyan-500 text-white shadow-lg' 
+                      : 'text-gray-400 light:text-slate-500 hover:bg-slate-700/80 light:hover:bg-slate-200'
+                  }`}
+                >
+                  <span className={`${activeId === link.id ? 'text-white' : 'text-slate-400 light:text-slate-500'}`}>
+                    {getChapterIcon(link.id, 18)}
+                  </span>
+                  <span className="font-medium text-xs ml-3">{link.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       
     </div>
   );
@@ -122,22 +133,24 @@ export default function Layout() {
     };
   }, [isMobileMenuOpen, setIsMobileMenuOpen]);
 
+  // ボトムナビゲーションに表示させないメニューのID
+  const bottomLinkIds = ['feedback', 'setting'];
+
   return (
     <div 
       ref={containerRef}
       className="fixed inset-0 w-full h-full bg-slate-900 light:bg-slate-50 text-slate-300 light:text-slate-800 overflow-hidden overscroll-none touch-pan-y transition-colors duration-300"
     >
-      {/* ① スマホ用サイドメニュー (元のまま: 背面に配置し、メインコンテンツがスライドする) */}
+      {/* ① スマホ用サイドメニュー */}
       {chapterLinks.length > 0 && (
         <div className="md:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-0 p-4 border-r border-white/10 light:border-slate-200">
           <SidebarContent links={chapterLinks} activeId={activeChapter} onNavigate={setActiveChapter} closeMenu={() => setIsMobileMenuOpen(false)} />
         </div>
       )}
 
-      {/* 🌟 追加: タブレット用オーバーレイサイドメニュー (Geminiスタイル) */}
+      {/* タブレット用オーバーレイサイドメニュー */}
       {chapterLinks.length > 0 && (
         <>
-          {/* メニュー外の半透明背景 */}
           <div 
             className={`hidden md:block lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-[1px] transition-opacity duration-300 ${
               isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -145,7 +158,6 @@ export default function Layout() {
             onClick={() => setIsMobileMenuOpen(false)} 
             aria-hidden="true" 
           />
-          {/* メニュー本体 */}
           <div 
             className={`hidden md:block lg:hidden fixed inset-y-0 left-0 w-80 bg-slate-900 light:bg-white z-50 p-4 border-r border-white/10 light:border-slate-200 transition-transform duration-300 ease-out ${
               isMobileMenuOpen ? 'translate-x-0 shadow-[15px_0_30px_rgba(0,0,0,0.5)]' : '-translate-x-full'
@@ -162,7 +174,6 @@ export default function Layout() {
           isMobileMenuOpen ? 'translate-x-80 md:translate-x-0 shadow-[-15px_0_30px_rgba(0,0,0,0.5)]' : 'translate-x-0'
         }`}
       >
-        {/* スマホ用の半透明背景 */}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute inset-0 bg-black/40 z-50 backdrop-blur-[1px]" onClick={() => setIsMobileMenuOpen(false)} aria-hidden="true" />
         )}
@@ -171,7 +182,6 @@ export default function Layout() {
         <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 light:bg-white/70 backdrop-blur-lg border-b border-white/10 light:border-slate-200">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
-              {/* 🌟 変更: タブレットでもメニューボタンを表示させるために md:hidden を lg:hidden に変更 */}
               {chapterLinks.length > 0 && (
                 <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-300 light:text-slate-600">
                   <FiMenu size={24} />
@@ -185,7 +195,6 @@ export default function Layout() {
         {/* コンテンツエリア */}
         <div className="flex-1 overflow-y-auto w-full pb-20 md:pb-0">
           <div className="flex w-full max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-            {/* 🌟 変更: PC用静的サイドメニューの表示を md:flex から lg:flex に変更 */}
             {chapterLinks.length > 0 && (
               <aside className="hidden lg:flex sticky top-0 self-start h-screen w-64 flex-shrink-0 bg-slate-900/60 light:bg-white/60 border-r border-white/10 light:border-slate-200 p-4 pt-16 flex-col justify-between z-10">
                 <SidebarContent links={chapterLinks} activeId={activeChapter} onNavigate={setActiveChapter} closeMenu={() => {}} />
@@ -197,10 +206,11 @@ export default function Layout() {
           </div>
         </div>
 
-        {/* ③ ボトムナビゲーション (元のまま: スマホのみ表示) */}
+        {/* ③ ボトムナビゲーション (スマホのみ表示) */}
         <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-slate-900/95 light:bg-white/95 backdrop-blur-md border-t border-slate-700/50 light:border-slate-200 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <ul className="flex justify-around items-center h-14 px-1">
-            {chapterLinks.map(link => (
+            {/* 🌟 変更: bottomLinkIdsに含まれないもの（メインの3つ）だけをフィルターして表示 */}
+            {chapterLinks.filter(link => !bottomLinkIds.includes(link.id)).map(link => (
               <li key={link.id} className="flex-1">
                 <button
                   onClick={() => setActiveChapter(link.id)}
