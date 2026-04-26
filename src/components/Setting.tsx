@@ -1,6 +1,6 @@
 /* src/pages/Setting.tsx */
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
@@ -20,7 +20,7 @@ type SettingProps = {
 
 export default function Setting({ onSettingsSaved }: SettingProps) {
   const navigate = useNavigate();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   
   const [departmentsDB, setDepartmentsDB] = useState<DeptDB[]>([]);
@@ -32,9 +32,14 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
   const [courseClass, setCourseClass] = useState<number | null>(null);
   
   const [englishID, setEnglishID] = useState<number | null>(null);
+  const [lmsCalendarUrl, setLmsCalendarUrl] = useState<string>("");
   const [autoOpen, setAutoOpen] = useState<boolean>(true);
   const [isLightMode, setIsLightMode] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // 🌟 スクロール先の目印になるRefを作成
+  const advancedRef = useRef<HTMLDivElement>(null);
+  const isAdvancedFocused = searchParams.get("focus") === "advanced";
 
   const englishClassOptions = [
     { value: "3803", label: 'A' }, { value: "3804", label: 'B' }, { value: "3805", label: 'C' },
@@ -55,7 +60,7 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
         supabase.from('departments').select('*').order('id'),
         supabase.from('courses').select('*').order('id'),
         supabase.from('classes').select('*').order('id'),
-        supabase.from('profiles').select('class_id, english_id, auto_open, is_light_mode').eq('user_id', user.id).single()
+        supabase.from('profiles').select('class_id, english_id, auto_open, is_light_mode, lms_calendar_url').eq('user_id', user.id).single()
       ]);
 
       const depts = resDept.data || [];
@@ -79,6 +84,7 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
           }
         }
         setEnglishID(profile.english_id || null);
+        setLmsCalendarUrl(profile.lms_calendar_url || "");
         setAutoOpen(profile.auto_open ?? true);
         setIsLightMode(profile.is_light_mode ?? false);
       } else if (depts.length > 0 && crses.length > 0 && clses.length > 0) {
@@ -96,14 +102,14 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
   }, [navigate]);
 
   useEffect(() => {
-  if (isLightMode) {
-    document.documentElement.classList.add("light");
-    document.documentElement.classList.remove("dark"); // 念のため古いdarkは消す
-  } else {
-    document.documentElement.classList.remove("light");
-    document.documentElement.classList.add("dark");    // 常にdarkをベースに
-  }
-}, [isLightMode]);
+    if (isLightMode) {
+      document.documentElement.classList.add("light");
+      document.documentElement.classList.remove("dark");
+    } else {
+      document.documentElement.classList.remove("light");
+      document.documentElement.classList.add("dark");
+    }
+  }, [isLightMode]);
 
   useEffect(() => {
     if (department && coursesDB.length > 0) {
@@ -123,6 +129,17 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
     }
   }, [baseCourse, classesDB, courseClass]);
 
+  // 🌟 パラメータによってAdvancedを開くとき、その位置まで自動スクロールさせる
+  useEffect(() => {
+    if (isAdvancedFocused && advancedRef.current) {
+      // アニメーションなどで要素の高さが変わるのを少し待ってからスクロールする
+      const timer = setTimeout(() => {
+        advancedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isAdvancedFocused, department, baseCourse]); // フォームの内容が変わって高さが変化した際にも追従
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!user) return;
@@ -137,6 +154,7 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
         user_id: user.id,
         class_id: courseClass,
         english_id: englishID,
+        lms_calendar_url: lmsCalendarUrl ? lmsCalendarUrl.trim() : null,
         auto_open: autoOpen,
         is_light_mode: isLightMode,
         updated_at: new Date().toISOString(),
@@ -186,10 +204,8 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
     >
       <div className="flex flex-col items-center justify-center p-1 sm:p-2 animate-in fade-in duration-300">
         
-        {/* スマホ時: p-4, タブレット時: sm:p-6, PC時: md:p-8 と段階的に余白を調整 */}
         <div className="w-full max-w-3xl bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-4 sm:p-6 md:p-8 mb-6 shadow-xl">
 
-          {/* スマホ時: space-y-4 で間隔を詰める */}
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 text-left">
             <div className="text-slate-800 dark:text-slate-200 transition-colors duration-300">
               <RadioGroup 
@@ -222,7 +238,6 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
               </div>
             )}
 
-            {/* スマホ時: my-4 で区切り線の上下余白を減らす */}
             <hr className="border-t border-white/10 my-6" />
             
             <RadioGroup 
@@ -232,13 +247,31 @@ export default function Setting({ onSettingsSaved }: SettingProps) {
               onChange={(val) => setEnglishID(Number(val))} 
             />
             
-            <Collapsible title="Advanced">
-              <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
-              <p className="text-xs text-slate-400 mt-2">※ポップアップブロックを解除してください</p>
-            </Collapsible>
+            {/* 🌟 ここを div で囲み、ref をセットしてスクロールの目標地点にする */}
+            <div ref={advancedRef}>
+              <Collapsible title="Advanced" defaultOpen={isAdvancedFocused} open={isAdvancedFocused}>
+                <div className={`space-y-2 mb-6 p-4 rounded-xl transition-all duration-700 ${isAdvancedFocused ? 'bg-cyan-900/40 border border-cyan-400/80 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'bg-slate-900/20 border border-slate-700/50'}`}>
+                  <label className="block text-sm font-semibold text-cyan-100">
+                    LMS カレンダーURL (任意)
+                  </label>
+                  <input
+                    type="url"
+                    value={lmsCalendarUrl}
+                    onChange={(e) => setLmsCalendarUrl(e.target.value)}
+                    placeholder="https://lms-tokyo.iput.ac.jp/calendar/export_execute.php?..."
+                    className={`w-full bg-slate-900 border rounded-lg p-3 text-slate-200 outline-none transition-colors text-sm placeholder:text-slate-600 ${isAdvancedFocused ? 'border-cyan-500 focus:border-cyan-300' : 'border-slate-600 focus:border-cyan-400'}`}
+                  />
+                  <p className="text-xs text-slate-400 mt-1">
+                    LMSから取得したカレンダーの「エクスポートURL」を入力すると、個人の課題が自動で反映されます。
+                  </p>
+                </div>
+
+                <Switch label="授業開始前に自動で出席確認を開く" checked={autoOpen} onChange={setAutoOpen} />
+                <p className="text-xs text-slate-400 mt-2">※ポップアップブロックを解除してください</p>
+              </Collapsible>
+            </div>
 
             <div className="text-center pt-4 sm:pt-6">
-              {/* スマホ時: py-2.5, text-base でボタンを少し小さく */}
               <button type="submit" disabled={loading} className="w-full max-w-xs py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-semibold text-base sm:text-lg text-white shadow-lg hover:scale-105 transition-transform duration-300 disabled:opacity-50">
                 {loading ? "保存中..." : "保存"}
               </button>

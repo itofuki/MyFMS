@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import ChapterFrame from './ChapterFrame';
-import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiFileText, FiTool, FiLink, FiEdit2, FiX } from 'react-icons/fi';
+import { FiPlus, FiTrash2, FiCalendar, FiInbox, FiFileText, FiTool, FiLink, FiEdit2, FiX, FiInfo } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { TextInput, Select, Button, Group, Checkbox, useMantineTheme, SimpleGrid } from '@mantine/core';
 import { DatePickerInput, type DayProps } from '@mantine/dates';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import 'dayjs/locale/ja';
 import type { User } from '@supabase/supabase-js';
 
@@ -84,7 +85,7 @@ const getDeadlineStatus = (deadlineDate: string, isDone: boolean) => {
   const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffTime < 0) return { color: 'text-red-600 font-bold', label: '(Overdue)' };
+  if (diffTime < 0) return { color: 'text-red-600 font-bold', label: '(期限切れ)' };
   
   if (diffHours < 24) {
     const hours = diffHours === 0 ? '1' : diffHours;
@@ -141,15 +142,45 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     staleTime: Infinity,
   });
 
-  const { data: userRole = 'user', isLoading: isLoadingRole } = useQuery({
-    queryKey: ['userRole', currentUser?.id],
+  const { data: userProfile, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ['userProfile', currentUser?.id],
     queryFn: async () => {
-      if (!currentUser) return 'user';
-      const { data } = await supabase.from('profiles').select('role').eq('user_id', currentUser.id).single();
-      return data?.role || 'user';
+      if (!currentUser) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          role, 
+          lms_calendar_url,
+          classes (
+            representative_lms_url,
+            courses (
+              representative_lms_url
+            )
+          )
+        `)
+        .eq('user_id', currentUser.id)
+        .single();
+        
+      if (error) {
+        console.error("Profile fetch error:", error);
+        return null;
+      }
+      return data;
     },
     enabled: !!currentUser?.id,
   });
+
+  const userRole = userProfile?.role || 'user';
+  
+  const myLmsUrl = userProfile?.lms_calendar_url;
+  const classData = Array.isArray(userProfile?.classes) ? userProfile?.classes[0] : userProfile?.classes;
+  const classRepresentativeLmsUrl = classData?.representative_lms_url;
+  
+  const courseData = Array.isArray(classData?.courses) ? classData?.courses[0] : classData?.courses;
+  const courseRepresentativeLmsUrl = courseData?.representative_lms_url;
+  
+  const activeLmsCalendarUrl = myLmsUrl || classRepresentativeLmsUrl || courseRepresentativeLmsUrl;
 
   const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery<Assignment[]>({
     queryKey: ['assignments'],
@@ -164,15 +195,19 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   });
 
   const { data: lmsEvents = [], isLoading: isLoadingLmsEvents } = useQuery<LmsEvent[]>({
-    queryKey: ['lmsEvents'],
+    queryKey: ['lmsEvents', activeLmsCalendarUrl],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('get-lms-calendar');
+      if (!activeLmsCalendarUrl) return []; 
+      const { data, error } = await supabase.functions.invoke('get-lms-calendar', {
+        body: { calendarUrl: activeLmsCalendarUrl }
+      });
       if (error) {
         console.error("LMSカレンダー取得エラー:", error);
         return [];
       }
       return data?.events || [];
-    }
+    },
+    enabled: !!activeLmsCalendarUrl,
   });
 
   const { data: dbSubjects = [], isLoading: isLoadingDbSubjects } = useQuery<DbSubject[]>({
@@ -206,10 +241,9 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     enabled: !!currentUser?.id,
   });
 
-  const loading = isLoadingUser || isLoadingRole || isLoadingAssignments || isLoadingLmsEvents || isLoadingDbSubjects || isLoadingLmsStatuses;
+  const loading = isLoadingUser || isLoadingProfile || isLoadingAssignments || isLoadingLmsEvents || isLoadingDbSubjects || isLoadingLmsStatuses;
 
   // --- React Queryによるデータ更新 (Mutations) ---
-  
   const upsertMutation = useMutation({
     mutationFn: async (payload: { isEdit: boolean, data: any, id?: number }) => {
       if (payload.isEdit) {
@@ -403,10 +437,20 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   };
 
   const unifiedAssignments = useMemo(() => {
+    const nowDate = new Date();
+    const twoWeeksLater = new Date(nowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    
     const enrolledSubjectNames = subject.map(s => s.name);
-    const filteredDb = assignments.filter(assignment => 
-      !assignment.subject_name || enrolledSubjectNames.includes(assignment.subject_name)
-    );
+    const enrolledSubjectIds = subject.map(s => s.id);
+
+    // 1. DB課題のフィルタリング
+    const filteredDb = assignments.filter(assignment => {
+      // 🌟 DB課題（自分で設定した課題等）は、過去の期限のものも表示する
+      // 科目が未設定（個人タスク）、または履修科目名に一致するものだけ残す
+      const isEnrolledOrNoSubject = !assignment.subject_name || enrolledSubjectNames.includes(assignment.subject_name);
+      return isEnrolledOrNoSubject; 
+    });
+    
     const dbUnified: UnifiedAssignment[] = filteredDb.map(a => {
       const matchedSubjectProp = subject.find(s => s.name === a.subject_name);
       const dbSub = matchedSubjectProp ? dbSubjects.find(s => s.id === matchedSubjectProp.id) : undefined;
@@ -417,24 +461,32 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       };
     });
 
-    const nowDate = new Date();
-    const twoWeeksLater = new Date(nowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+    // 2. LMS課題のフィルタリング
     const excludedKeywords = ['出欠', '出席', 'attendance', 'アンケート開始'];
     const filteredLms = lmsEvents.filter(e => {
       const eventTime = e.end ? new Date(e.end) : new Date(e.start);
-      const isWithinTwoWeeks = eventTime >= nowDate && eventTime <= twoWeeksLater;
+      // 🌟 LMS課題は現在時刻〜2週間後の間のみ表示
+      const isFuture = eventTime >= nowDate; 
+      const isWithinTwoWeeks = eventTime <= twoWeeksLater;
       const summaryLower = e.summary.toLowerCase(); 
       const hasExcludedKeyword = excludedKeywords.some(keyword => summaryLower.includes(keyword));
-      return isWithinTwoWeeks && !hasExcludedKeyword;
+      
+      const matchedDbSubject = dbSubjects.find(s => s.category_code && e.categoryCode && s.category_code === e.categoryCode);
+      
+      const isEnrolled = matchedDbSubject ? enrolledSubjectIds.includes(matchedDbSubject.id) : false;
+
+      return isFuture && isWithinTwoWeeks && !hasExcludedKeyword && isEnrolled;
     });
 
     const lmsUnified: UnifiedAssignment[] = filteredLms.map(event => {
-      const matchedSubject = dbSubjects.find(s => s.category_code && event.categoryCode && s.category_code === event.categoryCode);
+      const matchedDbSubject = dbSubjects.find(s => s.category_code && event.categoryCode && s.category_code === event.categoryCode);
+      
       let eventUrl = '';
-      if (matchedSubject) eventUrl = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${matchedSubject.id}`;
+      if (matchedDbSubject) eventUrl = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${matchedDbSubject.id}`;
       else if (event.categoryCode) eventUrl = `https://lms-tokyo.iput.ac.jp/course/search.php?search=${event.categoryCode}`;
       else if (event.url) eventUrl = event.url;
-      const displaySubjectName = subject.find(s => s.id === matchedSubject?.id)?.name || '未分類(LMS)';
+      
+      const displaySubjectName = subject.find(s => s.id === matchedDbSubject?.id)?.name || '未分類(LMS)';
       const statusObj = lmsStatuses.find(s => s.lms_uid === event.uid);
       const isDone = statusObj ? statusObj.done : false;
 
@@ -449,7 +501,7 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
         url: eventUrl,
         isLms: true,
         description: event.description,
-        subjectCategoryType: getSubjectCategoryType(matchedSubject)
+        subjectCategoryType: getSubjectCategoryType(matchedDbSubject)
       };
     });
 
@@ -495,10 +547,62 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       >
         <div className="w-full flex flex-col gap-8 md:px-10 p-2 sm:p-4 rounded-xl transition-all duration-300">
           <div>
+
+            {!myLmsUrl && !classRepresentativeLmsUrl && !courseRepresentativeLmsUrl && !isAdminMode && (
+              <div className="mb-6 p-4 bg-blue-900/40 border border-blue-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 text-blue-200">
+                  <FiInfo className="mt-0.5 flex-shrink-0 text-blue-400" size={18} />
+                  <p className="text-sm">
+                    LMSの課題を自動で取得するには、設定画面からご自身のカレンダーURLを登録してください。
+                  </p>
+                </div>
+                <Link 
+                  to="?tab=setting&focus=advanced"
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+                >
+                  設定を開く
+                </Link>
+              </div>
+            )}
+
+            {!myLmsUrl && classRepresentativeLmsUrl && !isAdminMode && (
+              <div className="mb-6 p-4 bg-emerald-900/40 border border-emerald-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 text-emerald-200">
+                  <FiInfo className="mt-0.5 flex-shrink-0 text-emerald-400" size={18} />
+                  <p className="text-sm">
+                    現在、<strong>クラス代表者</strong>のカレンダーデータを使用して課題を表示しています。個人の履修科目を正確に反映させたい場合は、ご自身のURLをご登録ください。
+                  </p>
+                </div>
+                <Link 
+                  to="?tab=setting&focus=advanced"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+                >
+                  設定を開く
+                </Link>
+              </div>
+            )}
+
+            {!myLmsUrl && !classRepresentativeLmsUrl && courseRepresentativeLmsUrl && !isAdminMode && (
+              <div className="mb-6 p-4 bg-purple-900/40 border border-purple-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3 text-purple-200">
+                  <FiInfo className="mt-0.5 flex-shrink-0 text-purple-400" size={18} />
+                  <p className="text-sm">
+                    現在、<strong>コース代表者</strong>のカレンダーデータを使用して課題を表示しています。あなた自身の履修科目やクラス情報を正確に反映させたい場合は、ご自身のURLをご登録ください。
+                  </p>
+                </div>
+                <Link 
+                  to="?tab=setting&focus=advanced"
+                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+                >
+                  設定を開く
+                </Link>
+              </div>
+            )}
+
             {unifiedAssignments.length === 0 ? (
               <div className="text-center py-10 px-4 bg-slate-800/30 rounded-lg border border-slate-700/30">
                 <FiInbox size={32} className="mx-auto text-slate-500 mb-3" />
-                <p className="text-slate-400 text-sm">{isAdminMode ? '表示できる公式課題はありません' : '直近2週間の課題はまだありません 🎉'}</p>
+                <p className="text-slate-400 text-sm">{isAdminMode ? '表示できる公式課題はありません' : '直近2週間の課題はありません 🎉'}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -561,7 +665,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                           )}
                         </div>
 
-                        {/* 🌟 変更: line-through を削除し、 opacity-50 のみに変更 */}
                         {assignment.isLms && assignment.description && (
                           <div 
                             className={`mt-2 text-xs line-clamp-2 prose prose-invert prose-sm whitespace-pre-wrap transition-colors duration-300 ${

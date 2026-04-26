@@ -7,9 +7,17 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  // 🌟 フロントエンドから送信されたURLを受け取る
+  const { calendarUrl } = await req.json();
+
+  if (!calendarUrl) {
+    return new Response(JSON.stringify({ events: [] }), { 
+      headers: { "Content-Type": "application/json" } 
+    });
   }
+
+  // 🌟 受け取ったユーザー固有のURLをfetchする
+  const response = await fetch(calendarUrl);
 
   try {
     const calendarUrl = Deno.env.get('LMS_CALENDAR_URL');
