@@ -488,7 +488,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                                 }`}
                               >
                                 {cleanTitle(assignment.name)}
-                                {assignment.isLms && <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-500/30 flex-shrink-0 mt-0.5">LMS</span>}
                               </a>
                             ) : (
                               <p 
