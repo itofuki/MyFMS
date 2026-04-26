@@ -116,7 +116,8 @@ const DailySchedule = ({ subjects, currentTime }: { subjects: Subject[], current
   </motion.div>
 );
 
-const WeeklySchedule = ({ weeklySubjects, currentTime, today }: { weeklySubjects: Record<Day, Subject[]>, currentTime: Date, today: Day }) => {
+// 🌟 修正: today の型を `Day | null` に変更し、土日に対応
+const WeeklySchedule = ({ weeklySubjects, currentTime, today }: { weeklySubjects: Record<Day, Subject[]>, currentTime: Date, today: Day | null }) => {
   const MAX_PERIODS = 6;
   const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
@@ -182,26 +183,29 @@ interface TimetableDisplayProps {
 }
 
 const TimetableDisplay: React.FC<TimetableDisplayProps> = ({ isWeeklyView, weeklyData }) => {
-  // 🌟 修正: リアルタイムで時間を更新する機構を追加 🌟
   const [currentTime, setCurrentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
 
   useEffect(() => {
-    // 1分(60000ms)ごとに時間を更新し、授業のハイライトを自動で切り替える
     const timer = setInterval(() => {
       setCurrentTime(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
     }, 60000);
 
-    return () => clearInterval(timer); // クリーンアップ関数
+    return () => clearInterval(timer);
   }, []);
 
-  const getTodayDay = (date: Date): Day => {
-    const dayIndex = date.getDay();
+  // 🌟 修正: 土日の場合は null を返すように変更
+  const getTodayDay = (date: Date): Day | null => {
+    const dayIndex = date.getDay(); // 0は日曜日、6は土曜日
+    if (dayIndex === 0 || dayIndex === 6) {
+      return null;
+    }
     const days: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    return days[dayIndex - 1] || 'Mon';
+    return days[dayIndex - 1];
   };
 
   const today = getTodayDay(currentTime);
-  const todaySubjects = weeklyData[today] || [];
+  // 🌟 修正: today が null (土日) の場合は空配列をセットする
+  const todaySubjects = today ? (weeklyData[today] || []) : [];
 
   return (
     <div className="h-full w-full flex justify-center items-center">
@@ -242,7 +246,6 @@ export const TimetableContainer: React.FC<TimetableContainerProps> = ({
   courseStyle,
   isProfileSet,
   weeklySubjects,
-  // courseName は表示に直接使っていないためプロパティ展開のみでOK
 }) => {
   return (
     <div className="flex flex-col bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl rounded-lg">
