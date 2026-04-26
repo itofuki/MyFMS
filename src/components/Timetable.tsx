@@ -14,6 +14,7 @@ export type Subject = {
   name: string;
   classroom: string;
   teacher: string;
+  categoryCode?: string;
 };
 export type Day = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri';
 

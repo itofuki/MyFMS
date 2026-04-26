@@ -38,6 +38,7 @@ type TimetableRpcData = {
   wday: string;
   period: number;
   classroom: string;
+  category_code: string; // 🌟 DBのカラム名を追加
 };
 
 type CourseStyle = {
@@ -146,6 +147,7 @@ export default function MyPage() {
     .map(subject => ({
       id: parseInt(subject.id.split('-')[0], 10),
       name: subject.name,
+      categoryCode: subject.categoryCode, // 🌟 Assignmentsに渡すために追加
     }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
@@ -186,7 +188,7 @@ export default function MyPage() {
         return;
       }
 
-      if(profileRes.error) {
+      if (profileRes.error) {
         console.error("プロフィール情報の取得に失敗:", profileRes.error);
         setIsProfileSet(false);
       } else {
@@ -230,6 +232,7 @@ export default function MyPage() {
               wday: day,
               period: subject.period,
               classroom: subject.classroom,
+              categoryCode: subject.category_code, // 🌟 RPCから取得した値を入れる
             });
           }
           return acc;
