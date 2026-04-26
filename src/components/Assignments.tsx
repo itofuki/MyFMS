@@ -132,7 +132,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
   const [newUrl, setNewUrl] = useState('');
 
   // --- React Queryによるデータ取得 ---
-  // 🌟 User型を明示的に指定
   const { data: currentUser, isLoading: isLoadingUser } = useQuery<User | null>({
     queryKey: ['currentUser'],
     queryFn: async () => {
@@ -164,7 +163,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }
   });
 
-  // 🌟 LmsEvent型の配列であることを明示的に指定
   const { data: lmsEvents = [], isLoading: isLoadingLmsEvents } = useQuery<LmsEvent[]>({
     queryKey: ['lmsEvents'],
     queryFn: async () => {
@@ -212,7 +210,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
   // --- React Queryによるデータ更新 (Mutations) ---
   
-  // 課題の追加・更新
   const upsertMutation = useMutation({
     mutationFn: async (payload: { isEdit: boolean, data: any, id?: number }) => {
       if (payload.isEdit) {
@@ -233,7 +230,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }
   });
 
-  // 課題の削除
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const { error } = await supabase.from('assignment').delete().eq('id', id);
@@ -253,7 +249,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }
   });
 
-  // DB課題のトグル (楽観的更新)
   const toggleDbMutation = useMutation({
     mutationFn: async ({ assignmentId, newStatus, userId }: { assignmentId: number, newStatus: boolean, userId: string }) => {
       const { error } = await supabase.from('assignment_status').upsert(
@@ -271,7 +266,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       });
       return { previous };
     },
-    // 🌟 未使用引数 variables を _variables に変更
     onError: (error, _variables, context) => {
       console.error('Error updating status:', error);
       if (context?.previous) queryClient.setQueryData(['assignments'], context.previous);
@@ -281,7 +275,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     }
   });
 
-  // LMS課題のトグル (楽観的更新)
   const toggleLmsMutation = useMutation({
     mutationFn: async ({ assignmentId, newStatus, userId }: { assignmentId: string, newStatus: boolean, userId: string }) => {
       const { error } = await supabase.from('lms_assignment_status').upsert(
@@ -301,7 +294,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       });
       return { previous };
     },
-    // 🌟 未使用引数 variables を _variables に変更
     onError: (error, _variables, context) => {
       console.error('Error updating LMS status:', error);
       alert('ステータスの更新に失敗しました。');
@@ -569,9 +561,12 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
                           )}
                         </div>
 
+                        {/* 🌟 変更: line-through を削除し、 opacity-50 のみに変更 */}
                         {assignment.isLms && assignment.description && (
                           <div 
-                            className="mt-2 text-xs text-slate-300 line-clamp-2 prose prose-invert prose-sm whitespace-pre-wrap"
+                            className={`mt-2 text-xs line-clamp-2 prose prose-invert prose-sm whitespace-pre-wrap transition-colors duration-300 ${
+                              assignment.done ? 'text-slate-500 opacity-50' : 'text-slate-300'
+                            }`}
                             dangerouslySetInnerHTML={{ __html: assignment.description }} 
                           />
                         )}
