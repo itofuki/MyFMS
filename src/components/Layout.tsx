@@ -36,7 +36,7 @@ const SidebarContent: React.FC<{
     <div className="flex flex-col h-full pt-4 md:pt-6 overflow-y-auto">
       <h2 className="text-lg font-bold text-white light:text-slate-800 mb-6 px-2 transition-colors duration-300">メニュー</h2>
       
-      {/* 通常のメニュー項目（🌟 画面下部に押しやる flex-1 を削除しました） */}
+      {/* 通常のメニュー項目 */}
       <ul className="space-y-2 px-2">
         {topLinks.map(link => (
           <li key={link.id}>
@@ -57,7 +57,7 @@ const SidebarContent: React.FC<{
         ))}
       </ul>
 
-      {/* 設定やご意見のブロック（すぐ下に配置されるように mt-4 に調整） */}
+      {/* 設定やご意見のブロック */}
       {bottomLinks.length > 0 && (
         <div className="mt-4 px-2 pb-4">
           <hr className="border-t border-white/10 light:border-slate-300 mb-4 transition-colors duration-300" />
@@ -192,33 +192,32 @@ export default function Layout() {
               <Link to="/" className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-500 to-purple-500">MyFMS</Link>
             </div>
 
-            {/* ↓↓↓ 追加部分：右側のリンク群 ↓↓↓ */}
+            {/* 右側のリンク群 */}
             <div className="flex items-center space-x-4 md:space-x-6">
               
-              {/* リンク1（シアン系、外部リンクアイコン入り） */}
+              {/* リンク1（エメラルド系に変更） */}
               <a 
                 href="https://portal.nkz.ac.jp/campusweb/top.do" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-sm md:text-base font-semibold text-cyan-400 light:text-cyan-600 hover:text-cyan-300 light:hover:text-cyan-500 underline decoration-cyan-400/50 hover:decoration-cyan-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
+                className="flex items-center gap-1 text-sm md:text-base font-semibold text-emerald-400 light:text-emerald-600 hover:text-emerald-300 light:hover:text-emerald-500 underline decoration-emerald-400/50 hover:decoration-emerald-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
               >
                 <FiExternalLink size={16} className="flex-shrink-0" />
                 <span>Portal</span>
               </a>
 
-              {/* リンク2（パープル系、外部リンクアイコン入り） */}
+              {/* リンク2（アンバー系に変更） */}
               <a 
                 href="https://st.uc.career-tasu.jp/top/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-sm md:text-base font-semibold text-purple-400 light:text-purple-600 hover:text-purple-300 light:hover:text-purple-500 underline decoration-purple-400/50 hover:decoration-purple-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
+                className="flex items-center gap-1 text-sm md:text-base font-semibold text-amber-400 light:text-amber-600 hover:text-amber-300 light:hover:text-amber-500 underline decoration-amber-400/50 hover:decoration-amber-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
               >
                 <FiExternalLink size={16} className="flex-shrink-0" />
                 <span>Career</span>
               </a>
               
             </div>
-            {/* ↑↑↑ 追加部分 ここまで ↑↑↑ */}
 
           </div>
         </nav>
@@ -240,7 +239,6 @@ export default function Layout() {
         {/* ③ ボトムナビゲーション (スマホのみ表示) */}
         <nav className="md:hidden absolute bottom-0 left-0 w-full z-30 bg-slate-900/95 light:bg-white/95 backdrop-blur-md border-t border-slate-700/50 light:border-slate-200 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
           <ul className="flex justify-around items-center h-14 px-1">
-            {/* 🌟 変更: bottomLinkIdsに含まれないもの（メインの3つ）だけをフィルターして表示 */}
             {chapterLinks.filter(link => !bottomLinkIds.includes(link.id)).map(link => (
               <li key={link.id} className="flex-1">
                 <button
