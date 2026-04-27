@@ -548,57 +548,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
         <div className="w-full flex flex-col gap-8 md:px-10 p-2 sm:p-4 rounded-xl transition-all duration-300">
           <div>
 
-            {!myLmsUrl && !classRepresentativeLmsUrl && !courseRepresentativeLmsUrl && !isAdminMode && (
-              <div className="mb-6 p-4 bg-blue-900/40 border border-blue-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3 text-blue-200">
-                  <FiInfo className="mt-0.5 flex-shrink-0 text-blue-400" size={18} />
-                  <p className="text-sm">
-                    LMSの課題を自動で取得するには、設定画面からご自身のカレンダーURLを登録してください。
-                  </p>
-                </div>
-                <Link 
-                  to="?tab=setting&focus=advanced"
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
-                >
-                  設定を開く
-                </Link>
-              </div>
-            )}
-
-            {!myLmsUrl && classRepresentativeLmsUrl && !isAdminMode && (
-              <div className="mb-6 p-4 bg-emerald-900/40 border border-emerald-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3 text-emerald-200">
-                  <FiInfo className="mt-0.5 flex-shrink-0 text-emerald-400" size={18} />
-                  <p className="text-sm">
-                    現在、<strong>クラス代表者</strong>のカレンダーデータを使用して課題を表示しています。個人の履修科目を正確に反映させたい場合は、ご自身のURLをご登録ください。
-                  </p>
-                </div>
-                <Link 
-                  to="?tab=setting&focus=advanced"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
-                >
-                  設定を開く
-                </Link>
-              </div>
-            )}
-
-            {!myLmsUrl && !classRepresentativeLmsUrl && courseRepresentativeLmsUrl && !isAdminMode && (
-              <div className="mb-6 p-4 bg-purple-900/40 border border-purple-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-start gap-3 text-purple-200">
-                  <FiInfo className="mt-0.5 flex-shrink-0 text-purple-400" size={18} />
-                  <p className="text-sm">
-                    現在、<strong>コース代表者</strong>のカレンダーデータを使用して課題を表示しています。あなた自身の履修科目やクラス情報を正確に反映させたい場合は、ご自身のURLをご登録ください。
-                  </p>
-                </div>
-                <Link 
-                  to="?tab=setting&focus=advanced"
-                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
-                >
-                  設定を開く
-                </Link>
-              </div>
-            )}
-
             {unifiedAssignments.length === 0 ? (
               <div className="text-center py-10 px-4 bg-slate-800/30 rounded-lg border border-slate-700/30">
                 <FiInbox size={32} className="mx-auto text-slate-500 mb-3" />
@@ -680,6 +629,57 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
               </div>
             )}
           </div>
+
+          {!myLmsUrl && !classRepresentativeLmsUrl && !courseRepresentativeLmsUrl && !isAdminMode && (
+            <div className="mb-6 p-4 bg-blue-900/40 border border-blue-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3 text-blue-200">
+                <FiInfo className="mt-0.5 flex-shrink-0 text-blue-400" size={18} />
+                <p className="text-sm">
+                  LMSの課題を自動で取得するには、設定画面からご自身のカレンダーURLを登録してください。
+                </p>
+              </div>
+              <Link 
+                to="?tab=setting&focus=advanced"
+                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+              >
+                設定を開く
+              </Link>
+            </div>
+          )}
+
+          {!myLmsUrl && classRepresentativeLmsUrl && !isAdminMode && (
+            <div className="mb-6 p-4 bg-emerald-900/40 border border-emerald-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3 text-emerald-200">
+                <FiInfo className="mt-0.5 flex-shrink-0 text-emerald-400" size={18} />
+                <p className="text-sm">
+                  現在、<strong>クラス代表者</strong>のカレンダーデータを使用して課題を表示しています。個人の履修科目を正確に反映させたい場合は、ご自身のURLをご登録ください。
+                </p>
+              </div>
+              <Link 
+                to="?tab=setting&focus=advanced"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+              >
+                設定を開く
+              </Link>
+            </div>
+          )}
+
+          {!myLmsUrl && !classRepresentativeLmsUrl && courseRepresentativeLmsUrl && !isAdminMode && (
+            <div className="mb-6 p-4 bg-purple-900/40 border border-purple-500/50 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3 text-purple-200">
+                <FiInfo className="mt-0.5 flex-shrink-0 text-purple-400" size={18} />
+                <p className="text-sm">
+                  現在、<strong>コース代表者</strong>のカレンダーデータを使用して課題を表示しています。あなた自身の履修科目やクラス情報を正確に反映させたい場合は、ご自身のURLをご登録ください。
+                </p>
+              </div>
+              <Link 
+                to="?tab=setting&focus=advanced"
+                className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 px-4 rounded transition-colors whitespace-nowrap self-end sm:self-auto"
+              >
+                設定を開く
+              </Link>
+            </div>
+          )}
 
           {/* 課題フォーム */}
           <div ref={formRef} className={`bg-slate-800/50 p-4 rounded-lg transition-all duration-300 ring-cyan-500 ${editingId ? 'ring-2 shadow-lg shadow-cyan-500/10' : ''}`}>
