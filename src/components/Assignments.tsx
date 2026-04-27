@@ -438,6 +438,8 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
   const unifiedAssignments = useMemo(() => {
     const nowDate = new Date();
+    // 🌟 現在時刻の24時間前の時間を定義
+    const twentyFourHoursAgo = new Date(nowDate.getTime() - 24 * 60 * 60 * 1000);
     const twoWeeksLater = new Date(nowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
     
     const enrolledSubjectNames = subject.map(s => s.name);
@@ -465,8 +467,9 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
     const excludedKeywords = ['出欠', '出席', 'attendance', 'アンケート開始'];
     const filteredLms = lmsEvents.filter(e => {
       const eventTime = e.end ? new Date(e.end) : new Date(e.start);
-      // 🌟 LMS課題は現在時刻〜2週間後の間のみ表示
-      const isFuture = eventTime >= nowDate; 
+      
+      // 🌟 ここを変更: 期限から24時間経過していないか（現在時刻の24時間前より後か）
+      const isNotExpired = eventTime >= twentyFourHoursAgo; 
       const isWithinTwoWeeks = eventTime <= twoWeeksLater;
       const summaryLower = e.summary.toLowerCase(); 
       const hasExcludedKeyword = excludedKeywords.some(keyword => summaryLower.includes(keyword));
@@ -475,7 +478,8 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
       
       const isEnrolled = matchedDbSubject ? enrolledSubjectIds.includes(matchedDbSubject.id) : false;
 
-      return isFuture && isWithinTwoWeeks && !hasExcludedKeyword && isEnrolled;
+      // isFuture を isNotExpired に置き換え
+      return isNotExpired && isWithinTwoWeeks && !hasExcludedKeyword && isEnrolled;
     });
 
     const lmsUnified: UnifiedAssignment[] = filteredLms.map(event => {
