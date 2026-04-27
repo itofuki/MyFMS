@@ -3,7 +3,7 @@ import { useRef, useEffect } from 'react';
 import { Outlet, Link } from "react-router-dom";
 import { Toaster } from 'sonner';
 import { useSidebar, type ChapterLink } from "../contexts/SidebarContext"; 
-import { FiMenu, FiSettings, FiCalendar, FiFileText, FiBookOpen, FiFolder, FiMessageSquare } from "react-icons/fi";
+import { FiMenu, FiSettings, FiCalendar, FiFileText, FiBookOpen, FiFolder, FiMessageSquare, FiExternalLink } from "react-icons/fi";
 
 const getChapterIcon = (id: string, size: number = 20) => {
   switch (id) {
@@ -181,6 +181,8 @@ export default function Layout() {
         {/* ヘッダー */}
         <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 light:bg-white/70 backdrop-blur-lg border-b border-white/10 light:border-slate-200">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+            
+            {/* 左側：メニューボタンとMyFMSロゴ */}
             <div className="flex items-center gap-4">
               {chapterLinks.length > 0 && (
                 <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-300 light:text-slate-600">
@@ -189,6 +191,35 @@ export default function Layout() {
               )}
               <Link to="/" className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-500 to-purple-500">MyFMS</Link>
             </div>
+
+            {/* ↓↓↓ 追加部分：右側のリンク群 ↓↓↓ */}
+            <div className="flex items-center space-x-4 md:space-x-6">
+              
+              {/* リンク1（シアン系、外部リンクアイコン入り） */}
+              <a 
+                href="https://portal.nkz.ac.jp/campusweb/top.do" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm md:text-base font-semibold text-cyan-400 light:text-cyan-600 hover:text-cyan-300 light:hover:text-cyan-500 underline decoration-cyan-400/50 hover:decoration-cyan-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
+              >
+                <FiExternalLink size={16} className="flex-shrink-0" />
+                <span>Portal</span>
+              </a>
+
+              {/* リンク2（パープル系、外部リンクアイコン入り） */}
+              <a 
+                href="https://st.uc.career-tasu.jp/top/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-sm md:text-base font-semibold text-purple-400 light:text-purple-600 hover:text-purple-300 light:hover:text-purple-500 underline decoration-purple-400/50 hover:decoration-purple-300 underline-offset-2 hover:underline-offset-4 transition-all duration-200"
+              >
+                <FiExternalLink size={16} className="flex-shrink-0" />
+                <span>Career</span>
+              </a>
+              
+            </div>
+            {/* ↑↑↑ 追加部分 ここまで ↑↑↑ */}
+
           </div>
         </nav>
 
