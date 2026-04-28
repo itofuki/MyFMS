@@ -438,8 +438,6 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
   const unifiedAssignments = useMemo(() => {
     const nowDate = new Date();
-    // 🌟 現在時刻の24時間前の時間を定義
-    const twentyFourHoursAgo = new Date(nowDate.getTime() - 24 * 60 * 60 * 1000);
     const twoWeeksLater = new Date(nowDate.getTime() + 14 * 24 * 60 * 60 * 1000);
     
     const enrolledSubjectNames = subject.map(s => s.name);
