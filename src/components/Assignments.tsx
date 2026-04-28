@@ -465,20 +465,26 @@ const Assignments: React.FC<AssignmentsProps> = ({ subject }) => {
 
     // 2. LMS課題のフィルタリング
     const excludedKeywords = ['出欠', '出席', 'attendance', 'アンケート開始'];
+    const now = new Date();
+
     const filteredLms = lmsEvents.filter(e => {
       const eventTime = e.end ? new Date(e.end) : new Date(e.start);
-      
-      // 🌟 ここを変更: 期限から24時間経過していないか（現在時刻の24時間前より後か）
-      const isNotExpired = eventTime >= twentyFourHoursAgo; 
-      const isWithinTwoWeeks = eventTime <= twoWeeksLater;
-      const summaryLower = e.summary.toLowerCase(); 
-      const hasExcludedKeyword = excludedKeywords.some(keyword => summaryLower.includes(keyword));
-      
-      const matchedDbSubject = dbSubjects.find(s => s.category_code && e.categoryCode && s.category_code === e.categoryCode);
-      
-      const isEnrolled = matchedDbSubject ? enrolledSubjectIds.includes(matchedDbSubject.id) : false;
 
-      // isFuture を isNotExpired に置き換え
+      const isNotExpired = eventTime >= now;
+      const isWithinTwoWeeks = eventTime <= twoWeeksLater;
+      const summaryLower = e.summary.toLowerCase();
+      const hasExcludedKeyword = excludedKeywords.some(keyword =>
+        summaryLower.includes(keyword)
+      );
+
+      const matchedDbSubject = dbSubjects.find(
+        s => s.category_code && e.categoryCode && s.category_code === e.categoryCode
+      );
+
+      const isEnrolled = matchedDbSubject
+        ? enrolledSubjectIds.includes(matchedDbSubject.id)
+        : false;
+
       return isNotExpired && isWithinTwoWeeks && !hasExcludedKeyword && isEnrolled;
     });
 
