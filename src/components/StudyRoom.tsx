@@ -1,10 +1,9 @@
-/* src/components/StudyRoom.tsx */
+// src/components/StudyRoom.tsx
 
 import { useState, useEffect } from 'react';
 import ChapterFrame from './ChapterFrame';
 import { FiBookOpen } from 'react-icons/fi';
 import { supabase } from '../lib/supabaseClient';
-import AdminStudyRoom from './AdminStudyRoom';
 import { useQuery } from '@tanstack/react-query';
 
 interface RoomSchedule {
@@ -40,14 +39,12 @@ const StudyRoom = () => {
 
   const currentPeriod = calculateCurrentPeriod(currentTime);
 
-  // 🌟 React Query: スケジュールPDFの取得（完璧な最終版）
+  // 🌟 React Query: スケジュールPDFの取得
   const { data: pdfPath, isLoading: isLoadingPdf } = useQuery({
     queryKey: ['studyRoomPdf', new Date().toLocaleDateString('sv-SE')],
     queryFn: async () => {
-      // 今日の日付を取得 (YYYY-MM-DD形式)
       const today = new Date().toLocaleDateString('sv-SE'); 
 
-      // 1. DBから「今日表示すべきファイル名」を取得
       const { data: meta, error: metaError } = await supabase
         .from('schedule_metadata')
         .select('filename')
@@ -63,15 +60,13 @@ const StudyRoom = () => {
       }
 
       if (!meta) {
-        return null; // 今日該当する時間割がない場合
+        return null; 
       }
 
-      // 2. 🌟 純粋な公開URLを取得（ブラウザのPDFビューアを正しく起動させるため）
       const { data } = supabase.storage
         .from('images')
         .getPublicUrl(`studyroom/${meta.filename}`);
 
-      // 余計なパラメータ（?t=...）をつけず、純粋なURLを返す
       return data.publicUrl;
     },
     staleTime: 1000 * 60 * 55, 
@@ -79,7 +74,6 @@ const StudyRoom = () => {
 
   // 🌟 React Query: DBからの「今日のスケジュールデータ」を取得
   const { data: todaySchedule, isLoading: isLoadingSchedule } = useQuery({
-    // 日付が変わったらキャッシュを無効化して再フェッチされるように、Query Keyに日付を含める
     queryKey: ['todaySchedule', new Date().toLocaleDateString('ja-JP')], 
     queryFn: async () => {
       const today = new Date();
@@ -185,7 +179,6 @@ const StudyRoom = () => {
 
           </div>
 
-          {/* 授業時間外などで部屋が開放されていない場合のメッセージ */}
           {todaySchedule !== undefined && !currentRooms && !isLoadingSchedule && (
             <p className="text-center text-slate-400 mt-4 text-sm md:text-base">
               現在開放されている部屋はありません
@@ -193,28 +186,30 @@ const StudyRoom = () => {
           )}
         </div>
 
-        <div className="w-full max-w-2xl my-2 rounded-md flex justify-center items-center min-h-[150px]">
+        <div className="w-full max-w-2xl my-2 flex flex-col justify-center items-center min-h-[150px]">
           {isLoadingPdf ? (
             <span className="text-slate-400 animate-pulse">スケジュール表を読み込み中...</span>
           ) : (
             pdfPath ? (
-              <object 
-                data={pdfPath} 
-                type="application/pdf" 
-                className="w-full h-[400px] md:h-[600px] rounded opacity-80 bg-white"
-              >
-                <div className="flex flex-col items-center justify-center p-4 bg-slate-800 rounded">
-                  <p className="text-slate-300 mb-2">ブラウザでPDFを表示できません。</p>
-                  <a 
-                    href={pdfPath} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-cyan-400 underline hover:text-cyan-300"
-                  >
-                    こちらからダウンロードして確認してください
-                  </a>
-                </div>
-              </object>
+              <div className="w-full flex flex-col items-center">
+                <iframe 
+                  src={`${pdfPath}#view=FitH`} 
+                  title="Study Room Schedule"
+                  className="w-full h-[600px] rounded bg-white border-none hidden md:block opacity-90"
+                />
+                <a 
+                  href={pdfPath} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="mt-4 md:mt-6 flex items-center justify-center gap-2 w-full max-w-sm bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 px-6 rounded-full transition-all shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:shadow-[0_0_25px_rgba(34,211,238,0.5)]"
+                >
+                  <FiBookOpen className="text-xl" />
+                  時間割を別タブで開く (PDF)
+                </a>
+                <p className="text-slate-500 text-xs mt-3 text-center md:hidden">
+                  ※スマートフォンではPDFのプレビューが表示されないため、<br/>上のボタンからご確認ください。
+                </p>
+              </div>
             ) : (
               <span className="text-slate-500">今週のスケジュールはまだありません</span>
             )
@@ -225,8 +220,6 @@ const StudyRoom = () => {
           ※閉館時間21:30（第1・3・5土曜は20:00）
         </p>
       </div>
-      
-      <AdminStudyRoom />
     </ChapterFrame>
   );
 };
