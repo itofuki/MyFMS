@@ -5,7 +5,7 @@ import ChapterFrame from './ChapterFrame';
 import { FiBookOpen } from 'react-icons/fi';
 import { supabase } from '../lib/supabaseClient';
 import AdminStudyRoom from './AdminStudyRoom';
-import { useQuery } from '@tanstack/react-query'; // 🌟 追加
+import { useQuery } from '@tanstack/react-query';
 
 interface RoomSchedule {
   study: string;
@@ -40,28 +40,40 @@ const StudyRoom = () => {
 
   const currentPeriod = calculateCurrentPeriod(currentTime);
 
-  // 🌟 React Query: スケジュール画像の取得
-  const { data: imagePath, isLoading: isLoadingImage } = useQuery({
-    queryKey: ['studyRoomImage'],
+  // 🌟 React Query: スケジュールPDFの取得（完璧な最終版）
+  const { data: pdfPath, isLoading: isLoadingPdf } = useQuery({
+    queryKey: ['studyRoomPdf', new Date().toLocaleDateString('sv-SE')],
     queryFn: async () => {
-      const today = new Date();
-      const month = today.getMonth() + 1;
-      const mday = today.getDate();
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const weekOfMonth = Math.ceil((mday + firstDayOfMonth.getDay()) / 7) - 1;
-      const imageName = `${month}.${weekOfMonth}.webp`;
+      // 今日の日付を取得 (YYYY-MM-DD形式)
+      const today = new Date().toLocaleDateString('sv-SE'); 
 
-      const { data, error } = await supabase.storage
-        .from('images')
-        .createSignedUrl(`studyroom/${imageName}`, 3600);
+      // 1. DBから「今日表示すべきファイル名」を取得
+      const { data: meta, error: metaError } = await supabase
+        .from('schedule_metadata')
+        .select('filename')
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) {
-        console.error('画像の取得に失敗しました:', error.message);
-        return '/images/fallback-image.webp';
+      if (metaError) {
+        console.error('メタデータの取得に失敗しました:', metaError.message);
+        return null;
       }
-      return data.signedUrl;
+
+      if (!meta) {
+        return null; // 今日該当する時間割がない場合
+      }
+
+      // 2. 🌟 純粋な公開URLを取得（ブラウザのPDFビューアを正しく起動させるため）
+      const { data } = supabase.storage
+        .from('images')
+        .getPublicUrl(`studyroom/${meta.filename}`);
+
+      // 余計なパラメータ（?t=...）をつけず、純粋なURLを返す
+      return data.publicUrl;
     },
-    // Signed URLの有効期限が1時間（3600秒）なので、55分間キャッシュを保持
     staleTime: 1000 * 60 * 55, 
   });
 
@@ -182,18 +194,29 @@ const StudyRoom = () => {
         </div>
 
         <div className="w-full max-w-2xl my-2 rounded-md flex justify-center items-center min-h-[150px]">
-          {isLoadingImage ? (
-            <span className="text-slate-400 animate-pulse">スケジュール画像を読み込み中...</span>
+          {isLoadingPdf ? (
+            <span className="text-slate-400 animate-pulse">スケジュール表を読み込み中...</span>
           ) : (
-            imagePath && (
-              <img 
-                src={imagePath} 
-                alt="今週のスケジュール表"
-                className="w-full h-auto rounded opacity-80"
-                onError={(e) => {
-                  e.currentTarget.src = '/images/fallback-image.webp';
-                }}
-              />
+            pdfPath ? (
+              <object 
+                data={pdfPath} 
+                type="application/pdf" 
+                className="w-full h-[400px] md:h-[600px] rounded opacity-80 bg-white"
+              >
+                <div className="flex flex-col items-center justify-center p-4 bg-slate-800 rounded">
+                  <p className="text-slate-300 mb-2">ブラウザでPDFを表示できません。</p>
+                  <a 
+                    href={pdfPath} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-cyan-400 underline hover:text-cyan-300"
+                  >
+                    こちらからダウンロードして確認してください
+                  </a>
+                </div>
+              </object>
+            ) : (
+              <span className="text-slate-500">今週のスケジュールはまだありません</span>
             )
           )}
         </div>
