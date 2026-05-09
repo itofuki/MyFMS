@@ -200,7 +200,7 @@ const StudyRoom = () => {
               <object 
                 data={pdfPath} 
                 type="application/pdf" 
-                className="w-full h-[475px] md:h-[950px] rounded opacity-80 bg-white"
+                className="w-full h-[500x] md:h-[1000px] rounded opacity-80 bg-white"
               >
                 <div className="flex flex-col items-center justify-center p-4 bg-slate-800 rounded">
                   <p className="text-slate-300 mb-2">ブラウザでPDFを表示できません。</p>
