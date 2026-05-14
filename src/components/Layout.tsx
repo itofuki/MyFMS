@@ -182,14 +182,21 @@ export default function Layout() {
         <nav className="absolute top-0 left-0 w-full z-20 bg-slate-800/70 light:bg-white/70 backdrop-blur-lg border-b border-white/10 light:border-slate-200">
           <div className="flex items-center justify-between h-15 md:h-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
             
-            {/* 左側：メニューボタンとMyFMSロゴ */}
+            {/* 左側：メニューボタンとFMSロゴ */}
             <div className="flex items-center gap-4">
               {chapterLinks.length > 0 && (
                 <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-300 light:text-slate-600">
                   <FiMenu size={24} />
                 </button>
               )}
-              <Link to="/" className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-500 to-purple-500">MyFMS</Link>
+              
+              {/* LinkをFlexコンテナにして、アイコンと文字を横並びにする */}
+              <Link to="/" className="flex items-center gap-2">
+                <img src="/favicon.svg" alt="FMS Logo" className="w-8 h-8" />
+                <span className="text-2xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-500 to-purple-500">
+                  FMS
+                </span>
+              </Link>
             </div>
 
             {/* 右側のリンク群 */}

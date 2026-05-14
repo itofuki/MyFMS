@@ -101,7 +101,7 @@ export default function HomePage() {
       {/* コンテンツをz-indexで前面に配置 */}
       <div className="relative z-10 text-center max-w-4xl mx-auto space-y-6">
         <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-lg animate-pulse-light">
-          MyFMS
+          FMS
         </h1>
         <p className="text-xl md:text-2xl text-gray-200 font-light leading-relaxed max-w-3xl mx-auto opacity-90">
           - IPUT生向け学習プラットフォーム -

@@ -72,51 +72,69 @@ serve(async (req) => {
       const file = originalMessage.files[0];
       if (file.filetype !== "pdf" || !file.name?.includes("自習室")) return new Response("Skip", { status: 200 });
 
+      // 🌟 追加：ファイル名（例：「26年度_自習室案内.pdf」）から年度を抽出
+      const yearMatch = file.name.match(/(\d{2})年度/);
+      // 「26」が取れれば 2000 + 26 = 2026年。取れなければ今年の年をフォールバックとして使う
+      const targetYear = yearMatch ? 2000 + parseInt(yearMatch[1], 10) : new Date().getFullYear();
+
       const pdfRes = await fetch(file.url_private_download, { headers: { Authorization: `Bearer ${slackUserToken}` } });
       const pdfUint8Array = new Uint8Array(await pdfRes.arrayBuffer());
 
-      console.log("🧠 gemini-3-flash-preview による解析を開始します...");
+      console.log("🧠 gemini-3.1-pro-preview による解析を開始します...");
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       
       // gemini-3.1-pro-preview
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-3-flash-preview",
-        generationConfig: { responseMimeType: "application/json" }
+        model: "gemini-3.1-pro-preview",
+        generationConfig: { 
+          responseMimeType: "application/json",
+          temperature: 0
+        }
       });
       
       const pdfBase64 = encode(pdfUint8Array);
 
-      const prompt = `あなたは視覚的な表読み取りの専門家です。学校の自習室の開放時間割（PDF）から情報を読み取り、JSONフォーマットで出力してください。
+      const prompt = `あなたは視覚的ドキュメント解析の専門家です。提供されたPDF（自習室開放時間割）を以下の【思考プロセス】に従って厳密に解析し、JSONデータを作成してください。
 
-      精度を最大化するために、必ず以下の【Step 1】で表を仮想的に切り取り、【Step 2】で中身を分析し、最後にデータを出力するという段階的なプロセス（思考プロセス）を踏んでください。
+      【★最重要：錯覚防止と超短縮・言語化プロセス】
+      AIは「空白」と「文字の始まり」の境界に、存在しない「縦の罫線」を幻覚する致命的な弱点があります。
+      これを防ぐため、JSONの最初のキー \`grid_analysis\` で、実際に引かれている「黒い実線」の位置を超短縮記号でメモしてください。※出力時間を削るため、基本レイアウトから外れた「例外的な日」のみを抽出し、それ以外は記述しないでください。
 
-      【Step 1: 仮想的な表の切り取り（ノイズの排除）】
-      PDF全体にはヘッダー、フッター、注意書きなどがありますが、それらは一切無視してください。あなたの視界を「表の内部のみ」に限定します。
-      - 上端: 日付や曜日が書かれているヘッダー行を囲む、一番上の横線（外枠）
-      - 下端: 表全体の一番下の横線（外枠）
-      - 左右: 表の外枠の境界線（外枠）
-      この範囲外にある情報は、今後のデータ抽出において完全に存在しないものとして扱ってください。
+      【思考プロセス：物理的グリッドと対称性のスキャン】
+      1. **メタデータの抽出**:
+        - PDF全体から「開始日 (start_date)」と「終了日 (end_date)」を特定してください。
+        - **必ず「${targetYear}年」として処理してください。**（例: 日付が 4/24 なら ${targetYear}-04-24）。
 
-      【Step 2: セルの厳密な読み取りルール】
-      仮想的に切り取った表の中身を、以下の絶対ルールに従って左上から右下へ順番に読み取ります。
-      1. 日付は YYYY-MM-DD 形式に変換（例: 5月7日 -> 2026-05-07）。
-      2. 1日につき必ず1限〜6限の6行分のデータを作成する。
-      3. ★結合セルの処理★ 縦や横に大きく結合されている（間に区切り線がない）セルは、またがっている【すべて】の時限に全く同じ部屋番号を入れる。
-      4. ★「文字がない空間」の正しい解釈★ この表に「単なる空欄」という概念は絶対に存在しません。指定の教室がない時限には、必ず明確に「-」（ハイフン）が記載されています。したがって、もし【文字が何も書かれていない空白の場所】があった場合、それは空欄ではなく「結合されたセルの一部」です。勝手に「-」で埋めることは絶対にやめ、必ず【左右のセルを探索】し、その領域全体にまたがっている教室名を見つけ出して正確に抽出してください。
-      5. 部屋番号（例：361・374、30MR）は一言一句正確に抽出する。
+      2. **縦線の厳密なスキャン（★「点線トラップ」の排除）**:
+        - **【重大な警告】「談話室」と「自習室」を隔てる横線は「点線（......）」です。**
+        - このため、下の自習室にある「黒い実線の縦線」が、弱い点線を突き抜けて上の談話室まで続いていると錯覚（視覚の貫通モレ）を起こしやすくなっています。
+        - 縦線を探すときは、その行の空間に「明確な黒い実線」が存在するかだけを見てください。自習室の縦線は点線で確実に止まっており、談話室には絶対に影響しません。
 
-      【JSONの出力形式】
-      いきなりデータを書かず、必ず以下のキーの順番通りに出力してください。
+      3. **【絶対法則】重心と対称性による結合の推論**:
+        - 表計算ソフトの仕様上、結合されたセル内の文字は**「中央（重心）」**に配置されます。
+        - **例**: 縦線がない3限〜6限の広いブロックにおいて、文字が「4限と5限の間」に配置されている場合、それは右に寄っているのではなく「ブロック全体の中央」に配置されているだけです。
+        - したがって、文字がない「3限」や「6限」を勝手に空白（-）として切り捨てるなど、**非対称な解釈（例：3限だけハイフンで、4〜6限に部屋を割り当てる等）は絶対にやめてください。** 必ずブロック全体（3,4,5,6限すべて）に同じ文字列を適用してください。
+
+      4. **空白と記号のルール（★NULL禁止）**:
+        - **JSONの値に null を使用することは絶対厳禁です。**
+        - ブロック内に本当に文字がない場合や「-」「ー」のみの場合は、文字列の "-" を出力してください。
+        - 「・」などの記号も正確に抽出してください。
+
+      【出力JSONフォーマット（★高速化・配列仕様）】
+      出力文字数を極限まで減らすため、1日につき1つのオブジェクトとし、各部屋の1限〜6限の値を**配列（長さ6）**で出力してください。値には null を絶対に含めないこと。
       {
-        "step1_virtual_crop": "表の上端・下端・左右の範囲を特定し、余計な注意書きを無視したことを宣言してください。",
-        "step2_cell_analysis": "結合セルや、文字がない空間（ハイフンとの違い）をどのように処理したかを説明してください。",
-        "start_date": "2026-05-07",
-        "end_date": "2026-05-16",
+        "grid_analysis": "例外的な日のみを超短縮記号でメモ（例：「5/14談: 線[2|3, 5|6] 結合[1-2, 3-5, 6]」）。隣の行の線に騙されていないか必ず確認すること。",
+        "start_date": "YYYY-MM-DD",
+        "end_date": "YYYY-MM-DD",
         "schedules": [
-          { "target_date": "2026-05-07", "period": 1, "talk_rooms": "-", "study_rooms": "361・374" },
-          { "target_date": "2026-05-07", "period": 2, "talk_rooms": "-", "study_rooms": "361・374" }
+          { 
+            "target_date": "YYYY-MM-DD", 
+            "talk_rooms": ["1限の値", "2限の値", "3限の値", "4限の値", "5限の値", "6限〜の値"], 
+            "study_rooms": ["1限の値", "2限の値", "3限の値", "4限の値", "5限の値", "6限〜の値"] 
+          }
         ]
-      }`;
+      }
+      `;
 
       // 処理を呼び出す際、作成したリトライ関数を使用する
       const result = await generateContentWithRetry(model, [
@@ -126,10 +144,17 @@ serve(async (req) => {
       
       const parsed = JSON.parse(result.response.text());
 
+      console.log("🧠 AIの自己分析結果 (grid_analysis):", parsed.grid_analysis);
+
+      // AIが日付の読み取りに失敗した時の「安全装置」を追加
+      if (!parsed.start_date || !parsed.end_date) {
+        throw new Error(`AIが期間(start_date/end_date)の読み取りに失敗しました。AIの回答: ${JSON.stringify(parsed)}`);
+      }
+      
       const fileName = `timetable_${parsed.start_date}_${parsed.end_date}.pdf`;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // 🌟 1. Storageへのアップロード（エラーチェック追加）
+      // 1. Storageへのアップロード（エラーチェック追加）
       const { error: uploadError } = await supabase.storage.from('images').upload(`studyroom/${fileName}`, pdfUint8Array, { 
         upsert: true,
         contentType: 'application/pdf'
@@ -138,7 +163,7 @@ serve(async (req) => {
         throw new Error(`ストレージ保存エラー: ${uploadError.message}`);
       }
 
-      // 🌟 2. schedule_metadata への保存（エラーチェック追加）
+      // 2. schedule_metadata への保存（エラーチェック追加）
       const { error: metaError } = await supabase.from('schedule_metadata').upsert({
         filename: fileName,
         start_date: parsed.start_date,
@@ -148,7 +173,7 @@ serve(async (req) => {
         throw new Error(`メタデータ保存エラー: ${metaError.message}`);
       }
 
-      // 🌟 3. room_schedules への保存（既存のまま）
+      // 3. room_schedules への保存
       const { error: dbError } = await supabase.from('room_schedules').upsert(parsed.schedules, { 
         onConflict: 'target_date, period' 
       });
