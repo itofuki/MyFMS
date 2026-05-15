@@ -1,17 +1,8 @@
-import { useState, useEffect, useRef } from 'react'; // useRefを追加（PDFサイズ制御用）
+import { useState, useEffect } from 'react';
 import ChapterFrame from './ChapterFrame';
 import { FiBookOpen } from 'react-icons/fi';
 import { supabase } from '../lib/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
-
-// --- react-pdf 関連の修正 ---
-import { Document, Page, pdfjs } from 'react-pdf';
-// Viteでのエラーを回避するため、正しいパスを指定（esmを削除）
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-
-// Workerの設定（OSに依存せずレンダリングするために必要）
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface RoomSchedule {
   study: string;
@@ -19,16 +10,12 @@ interface RoomSchedule {
 }
 
 const StudyRoom = () => {
-  // 以前のロジックをそのまま維持
-  const [currentTime, setCurrentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
-  // PDFのレスポンシブ表示用
-  const [containerWidth, setContainerWidth] = useState<number>(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  // --- 時刻管理ロジック ---
+  const [currentTime, setCurrentTime] = useState(() => 
+    new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" }))
+  );
 
   useEffect(() => {
-    if (containerRef.current) {
-      setContainerWidth(containerRef.current.clientWidth);
-    }
     const timer = setInterval(() => {
       setCurrentTime(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
     }, 60000);
@@ -50,7 +37,7 @@ const StudyRoom = () => {
 
   const currentPeriod = calculateCurrentPeriod(currentTime);
 
-  // PDF取得ロジック（そのまま維持）
+  // --- PDF取得ロジック (Google Docs Viewerで使用) ---
   const { data: pdfPath, isLoading: isLoadingPdf } = useQuery({
     queryKey: ['studyRoomPdf', new Date().toLocaleDateString('sv-SE')],
     queryFn: async () => {
@@ -71,7 +58,7 @@ const StudyRoom = () => {
     staleTime: 1000 * 60 * 55, 
   });
 
-  // DB取得ロジック（新テーブル定義に合わせつつ、出力形式は「最初」のコードに準拠）
+  // --- 今日のスケジュール取得 (新テーブル定義: 配列型に対応) ---
   const { data: todaySchedule, isLoading: isLoadingSchedule } = useQuery({
     queryKey: ['todaySchedule', new Date().toLocaleDateString('ja-JP')], 
     queryFn: async () => {
@@ -87,7 +74,7 @@ const StudyRoom = () => {
       if (error || !data) return {};
 
       const formattedSchedule: Record<number, RoomSchedule> = {};
-      // 配列を時限(1-6)に展開して、最初のコードが期待するオブジェクト形式に変換
+      // 配列のインデックス(0-5)を時限(1-6)に展開
       for (let i = 0; i < 6; i++) {
         formattedSchedule[i + 1] = {
           study: data.study_rooms?.[i] || "-",
@@ -101,6 +88,7 @@ const StudyRoom = () => {
 
   const currentRooms = currentPeriod && todaySchedule ? todaySchedule[currentPeriod] : null;
 
+  // --- 表示用データ準備 ---
   const month = currentTime.getMonth() + 1;
   const mday = currentTime.getDate();
   const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
@@ -120,7 +108,8 @@ const StudyRoom = () => {
       }
     >
       <div className="flex flex-col items-center justify-center p-2">
-        {/* 上部の時刻・ステータス表示は「最初」のデザインを完全維持 */}
+        
+        {/* ステータスカード */}
         <div className="w-full max-w-2xl min-w-[340px] md:min-w-[600px] bg-slate-800/80 border-2 border-cyan-400/50 rounded-xl p-4 md:p-6 mb-6 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
           <div className="flex items-center justify-center mb-6 text-cyan-300">
             <h3 className="font-bold text-glow">
@@ -142,6 +131,7 @@ const StudyRoom = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-2 md:gap-4">
+            {/* 自習室 */}
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
               <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
               <div className="flex-1 flex items-center justify-center">
@@ -155,6 +145,7 @@ const StudyRoom = () => {
               </div>
             </div>
 
+            {/* 談話室 */}
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
               <p className="text-slate-400 text-xs md:text-sm mb-1">談話室</p>
               <div className="flex-1 flex items-center justify-center">
@@ -169,35 +160,31 @@ const StudyRoom = () => {
             </div>
           </div>
 
-          {todaySchedule !== undefined && !currentRooms && !isLoadingSchedule && (
+          {!currentRooms && !isLoadingSchedule && (
             <p className="text-center text-slate-400 mt-4 text-sm md:text-base">
               現在開放されている部屋はありません
             </p>
           )}
         </div>
 
-        {/* --- PDF表示セクションのみ OS・ブラウザ非依存の react-pdf に変更 --- */}
-        <div ref={containerRef} className="w-full max-w-2xl my-2 flex justify-center items-center min-h-[150px]">
+        {/* PDF表示セクション (Google Viewer 方式) */}
+        <div className="w-full max-w-2xl my-2 flex justify-center items-center min-h-[150px]">
           {isLoadingPdf ? (
-            <span className="text-slate-400 animate-pulse">スケジュール表を読み込み中...</span>
+            <span className="text-slate-400 animate-pulse">スケジュール表を準備中...</span>
           ) : pdfPath ? (
-            <div className="w-full border border-slate-700 rounded overflow-hidden shadow-xl">
-              <Document
-                file={pdfPath}
-                loading={<div className="p-10 text-slate-400">PDFを解析中...</div>}
-                error={<div className="p-10 text-red-400 text-sm">PDFの表示に失敗しました</div>}
+            <div className="w-full h-[500px] md:h-[820px] border border-slate-700 rounded overflow-hidden shadow-xl bg-white">
+              <iframe
+                src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfPath)}&embedded=true`}
+                className="w-full h-full"
               >
-                <Page 
-                  pageNumber={1} 
-                  width={containerWidth ? Math.min(containerWidth, 800) : 340}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  className="mx-auto"
-                />
-              </Document>
+                <div className="p-4 text-slate-800 text-center">
+                  <p>プレビューを表示できません。</p>
+                  <a href={pdfPath} className="text-cyan-600 underline">ダウンロードして確認</a>
+                </div>
+              </iframe>
             </div>
           ) : (
-            <span className="text-slate-500">今週のスケジュールはまだありません</span>
+            <span className="text-slate-500 italic">今週のスケジュールはまだありません</span>
           )}
         </div>
       </div>
