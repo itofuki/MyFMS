@@ -12,10 +12,8 @@ interface RoomSchedule {
 }
 
 const StudyRoom = () => {
-  // ★ 時間割(Timetable)と同じく、1分ごとに更新される時間ステート
   const [currentTime, setCurrentTime] = useState(() => new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
 
-  // 1分ごとに時間を更新
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Tokyo" })));
@@ -39,14 +37,11 @@ const StudyRoom = () => {
 
   const currentPeriod = calculateCurrentPeriod(currentTime);
 
-  // 🌟 React Query: スケジュールPDFの取得（完璧な最終版）
+  // 🌟 スケジュールPDFの取得（変更なし）
   const { data: pdfPath, isLoading: isLoadingPdf } = useQuery({
     queryKey: ['studyRoomPdf', new Date().toLocaleDateString('sv-SE')],
     queryFn: async () => {
-      // 今日の日付を取得 (YYYY-MM-DD形式)
       const today = new Date().toLocaleDateString('sv-SE'); 
-
-      // 1. DBから「今日表示すべきファイル名」を取得
       const { data: meta, error: metaError } = await supabase
         .from('schedule_metadata')
         .select('filename')
@@ -56,62 +51,56 @@ const StudyRoom = () => {
         .limit(1)
         .maybeSingle();
 
-      if (metaError) {
-        console.error('メタデータの取得に失敗しました:', metaError.message);
-        return null;
-      }
+      if (metaError || !meta) return null;
 
-      if (!meta) {
-        return null; // 今日該当する時間割がない場合
-      }
-
-      // 2. 🌟 純粋な公開URLを取得（ブラウザのPDFビューアを正しく起動させるため）
       const { data } = supabase.storage
         .from('images')
         .getPublicUrl(`studyroom/${meta.filename}`);
 
-      // 余計なパラメータ（?t=...）をつけず、純粋なURLを返す
       return data.publicUrl;
     },
     staleTime: 1000 * 60 * 55, 
   });
 
-  // 🌟 React Query: DBからの「今日のスケジュールデータ」を取得
+  // 🌟 DBからの「今日のスケジュールデータ」を取得（新スキーマ対応）
   const { data: todaySchedule, isLoading: isLoadingSchedule } = useQuery({
-    // 日付が変わったらキャッシュを無効化して再フェッチされるように、Query Keyに日付を含める
     queryKey: ['todaySchedule', new Date().toLocaleDateString('ja-JP')], 
     queryFn: async () => {
       const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const todayFormatted = `${yyyy}-${mm}-${dd}`;
+      const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+      // 修正ポイント：配列型のカラムを取得
       const { data, error } = await supabase
         .from('room_schedules')
-        .select('period, study_rooms, talk_rooms')
-        .eq('target_date', todayFormatted);
+        .select('study_rooms, talk_rooms')
+        .eq('target_date', todayFormatted)
+        .maybeSingle(); // 1日1レコードなので single 系を使用
 
       if (error) {
         console.error('DBからのスケジュール取得に失敗しました:', error.message);
         return {}; 
       }
 
+      if (!data) return {};
+
+      // 修正ポイント：配列 (長さ6) を時限 (1-6) をキーとするオブジェクトに変換
       const formattedSchedule: Record<number, RoomSchedule> = {};
-      data.forEach((row) => {
-        formattedSchedule[row.period] = {
-          study: row.study_rooms,
-          talk: row.talk_rooms
+      
+      // index 0 = 1限, index 1 = 2限... としてマッピング
+      for (let i = 0; i < 6; i++) {
+        formattedSchedule[i + 1] = {
+          study: data.study_rooms?.[i] || "-",
+          talk: data.talk_rooms?.[i] || "-"
         };
-      });
+      }
+      
       return formattedSchedule;
     },
-    staleTime: 1000 * 60 * 60, // 1時間キャッシュ
+    staleTime: 1000 * 60 * 60, 
   });
 
   const currentRooms = currentPeriod && todaySchedule ? todaySchedule[currentPeriod] : null;
 
-  // ★ 時間割画面と同じ表示用の変数を準備
   const month = currentTime.getMonth() + 1;
   const mday = currentTime.getDate();
   const weekDays = ["日", "月", "火", "水", "木", "金", "土"];
@@ -153,14 +142,13 @@ const StudyRoom = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-2 md:gap-4">
-            
             {/* --- 自習室 --- */}
             <div className="bg-slate-900 rounded-lg p-3 md:p-4 text-center border border-slate-700 flex flex-col justify-center min-h-[84px] md:min-h-[108px]">
               <p className="text-slate-400 text-xs md:text-sm mb-1">自習室</p>
               <div className="flex-1 flex items-center justify-center">
                 {isLoadingSchedule ? (
                   <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
-                ) : currentRooms ? (
+                ) : (currentRooms && currentRooms.study !== "-") ? (
                   <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.study}</span>
                 ) : (
                   <span className="text-slate-500 text-sm">-</span>
@@ -174,18 +162,17 @@ const StudyRoom = () => {
               <div className="flex-1 flex items-center justify-center">
                 {isLoadingSchedule ? (
                   <span className="text-slate-500 text-xs md:text-sm animate-pulse">読み込み中...</span>
-                ) : currentRooms ? (
+                ) : (currentRooms && currentRooms.talk !== "-") ? (
                   <span className="text-lg md:text-3xl font-bold text-white tracking-wider">{currentRooms.talk}</span>
                 ) : (
                   <span className="text-slate-500 text-sm">-</span>
                 )}
               </div>
             </div>
-
           </div>
 
-          {/* 授業時間外などで部屋が開放されていない場合のメッセージ */}
-          {todaySchedule !== undefined && !currentRooms && !isLoadingSchedule && (
+          {/* 授業時間外などで部屋が開放されていない、もしくはデータがハイフンのみの場合 */}
+          {todaySchedule !== undefined && (!currentRooms || (currentRooms.study === "-" && currentRooms.talk === "-")) && !isLoadingSchedule && (
             <p className="text-center text-slate-400 mt-4 text-sm md:text-base">
               現在開放されている部屋はありません
             </p>
@@ -220,7 +207,6 @@ const StudyRoom = () => {
           )}
         </div>
       </div>
-
     </ChapterFrame>
   );
 };

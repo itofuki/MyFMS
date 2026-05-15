@@ -19,15 +19,9 @@ async function generateContentWithRetry(model: any, requestData: any, maxRetries
       const isRetryable = error.status === 503 || error.status === 429;
 
       if (isRetryable && i < maxRetries - 1) {
-        // ベースの待機時間を抑えめにする (3秒, 6秒, 12秒...)
         const exponentialWait = Math.pow(2, i) * 3000; 
-        
-        // ★重要★ どんなに長くても1回の待機を「30秒」で打ち切る
         const delayCap = 30000; 
-        
-        // 0〜5秒のランダムなゆらぎ
         const jitter = Math.floor(Math.random() * 5000); 
-        
         const waitTime = Math.min(exponentialWait, delayCap) + jitter;
 
         console.log(`⚠️ サーバー混雑中(${error.status}): ${(waitTime / 1000).toFixed(1)}秒待機して再試行します... (試行 ${i + 1}/${maxRetries})`);
@@ -35,7 +29,6 @@ async function generateContentWithRetry(model: any, requestData: any, maxRetries
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
-      
       throw error;
     }
   }
@@ -72,9 +65,7 @@ serve(async (req) => {
       const file = originalMessage.files[0];
       if (file.filetype !== "pdf" || !file.name?.includes("自習室")) return new Response("Skip", { status: 200 });
 
-      // 🌟 追加：ファイル名（例：「26年度_自習室案内.pdf」）から年度を抽出
       const yearMatch = file.name.match(/(\d{2})年度/);
-      // 「26」が取れれば 2000 + 26 = 2026年。取れなければ今年の年をフォールバックとして使う
       const targetYear = yearMatch ? 2000 + parseInt(yearMatch[1], 10) : new Date().getFullYear();
 
       const pdfRes = await fetch(file.url_private_download, { headers: { Authorization: `Bearer ${slackUserToken}` } });
@@ -83,7 +74,6 @@ serve(async (req) => {
       console.log("🧠 gemini-3.1-pro-preview による解析を開始します...");
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       
-      // gemini-3.1-pro-preview
       const model = genAI.getGenerativeModel({ 
         model: "gemini-3.1-pro-preview",
         generationConfig: { 
@@ -94,6 +84,7 @@ serve(async (req) => {
       
       const pdfBase64 = encode(pdfUint8Array);
 
+      // プロンプトの内容は一切変更せず維持
       const prompt = `あなたは視覚的ドキュメント解析の専門家です。提供されたPDF（自習室開放時間割）を以下の【思考プロセス】に従って厳密に解析し、JSONデータを作成してください。
 
       【★最重要：錯覚防止と超短縮・言語化プロセス】
@@ -136,7 +127,6 @@ serve(async (req) => {
       }
       `;
 
-      // 処理を呼び出す際、作成したリトライ関数を使用する
       const result = await generateContentWithRetry(model, [
         { inlineData: { data: pdfBase64, mimeType: "application/pdf" } },
         prompt
@@ -146,40 +136,34 @@ serve(async (req) => {
 
       console.log("🧠 AIの自己分析結果 (grid_analysis):", parsed.grid_analysis);
 
-      // AIが日付の読み取りに失敗した時の「安全装置」を追加
       if (!parsed.start_date || !parsed.end_date) {
-        throw new Error(`AIが期間(start_date/end_date)の読み取りに失敗しました。AIの回答: ${JSON.stringify(parsed)}`);
+        throw new Error(`AIが期間の読み取りに失敗しました。`);
       }
       
       const fileName = `timetable_${parsed.start_date}_${parsed.end_date}.pdf`;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // 1. Storageへのアップロード（エラーチェック追加）
+      // 1. Storageへのアップロード
       const { error: uploadError } = await supabase.storage.from('images').upload(`studyroom/${fileName}`, pdfUint8Array, { 
         upsert: true,
         contentType: 'application/pdf'
       });
-      if (uploadError) {
-        throw new Error(`ストレージ保存エラー: ${uploadError.message}`);
-      }
+      if (uploadError) throw new Error(`ストレージ保存エラー: ${uploadError.message}`);
 
-      // 2. schedule_metadata への保存（エラーチェック追加）
+      // 2. schedule_metadata への保存
       const { error: metaError } = await supabase.from('schedule_metadata').upsert({
         filename: fileName,
         start_date: parsed.start_date,
         end_date: parsed.end_date
       }, { onConflict: 'filename' });
-      if (metaError) {
-        throw new Error(`メタデータ保存エラー: ${metaError.message}`);
-      }
+      if (metaError) throw new Error(`メタデータ保存エラー: ${metaError.message}`);
 
-      // 3. room_schedules への保存
+      // 3. room_schedules への保存（新テーブル定義対応）
+      // target_date ごとに1行、talk_rooms/study_rooms は配列として一括保存
       const { error: dbError } = await supabase.from('room_schedules').upsert(parsed.schedules, { 
-        onConflict: 'target_date, period' 
+        onConflict: 'target_date' 
       });
-      if (dbError) {
-        throw new Error(`スケジュール保存エラー: ${dbError.message}`);
-      }
+      if (dbError) throw new Error(`スケジュール保存エラー: ${dbError.message}`);
 
       console.log(`✅ 完了！ ${fileName} の情報を解析し、${parsed.schedules.length}件のスケジュールを保存しました。`);
       return new Response("Success", { status: 200 });
