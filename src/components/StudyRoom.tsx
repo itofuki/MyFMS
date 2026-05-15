@@ -172,7 +172,7 @@ const StudyRoom = () => {
           {isLoadingPdf ? (
             <span className="text-slate-400 animate-pulse">スケジュール表を準備中...</span>
           ) : pdfPath ? (
-            <div className="w-full h-[500px] md:h-[820px] border border-slate-700 rounded overflow-hidden shadow-xl bg-white">
+            <div className="w-full h-[450px] md:h-[820px] border border-slate-700 rounded overflow-hidden shadow-xl bg-white">
               <iframe
                 src={`https://docs.google.com/gview?url=${encodeURIComponent(pdfPath)}&embedded=true`}
                 className="w-full h-full"
