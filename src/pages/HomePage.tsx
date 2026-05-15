@@ -18,13 +18,9 @@ export default function HomePage() {
 
   // ページを開いた瞬間（マウント時）に1回だけトーストを表示
   useEffect(() => {
-    toast.warning("重要：ドメインが変更されました", {
-      description: "旧ドメインは間もなく利用不可となります。",
-      duration: 6000, // 6秒後に自動で消えます（お好みで調整してください）
-      action: {
-        label: "新サイトを開く",
-        onClick: () => window.location.href = "https://new-domain.com", // ※実際の新ドメインに変更
-      },
+    toast.warning("ドメインが変更されました", {
+      description: "再度ログインをお願いします",
+      duration: 6000
     });
   }, []);
 
