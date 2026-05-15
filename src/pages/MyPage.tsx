@@ -14,10 +14,6 @@ import Assignments from '../components/Assignments';
 import Setting from '../components/Setting';
 import Feedback from '../components/Feedback';
 
-// =================================================================
-// 型定義と共通データ
-// =================================================================
-
 const VALID_DAYS: Day[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 function isDay(key: any): key is Day {
   return VALID_DAYS.includes(key);
@@ -40,6 +36,7 @@ type TimetableRpcData = {
   period: number;
   classroom: string;
   category_code: string; 
+  attendance_id?: number | null; // ★RPCから返ってくるID
 };
 
 type CourseStyle = {
@@ -76,10 +73,6 @@ const getCourseStyle = (courseName: string): CourseStyle | null => {
   };
 };
 
-// =================================================================
-// MyPageコンポーネント本体
-// =================================================================
-
 const myPageChapters: ChapterLink[] = [
   { id: 'timetable', label: '時間割' },
   { id: 'assignments', label: '課題' },
@@ -94,35 +87,26 @@ export default function MyPage() {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // 1. チャプターのセット（画面幅に関係なく全て渡す）
   useEffect(() => {
     setChapterLinks(myPageChapters);
-
-    // コンポーネントアンマウント時のクリーンアップ
     return () => {
       setChapterLinks([]);
       setActiveChapter('');
     };
   }, [setChapterLinks, setActiveChapter]);
 
-  // 2. URLからの初期タブ設定
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    
     if (tabFromUrl && myPageChapters.some(c => c.id === tabFromUrl)) {
       setActiveChapter(tabFromUrl);
     } else if (!tabFromUrl) {
-      // パラメータがない場合はデフォルトを設定
       setSearchParams({ tab: 'timetable' }, { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // 3. activeChapterが変更されたらURLに反映
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
-    
-    // 現在のURLとStateが違う場合のみURLを更新
     if (activeChapter && activeChapter !== tabFromUrl) {
       setSearchParams({ tab: activeChapter }, { replace: true });
     }
@@ -173,6 +157,8 @@ export default function MyPage() {
       }
 
       setUser(user);
+      
+      // ★ RPCを呼び出してデータを一括取得！フロントエンドのコードが超シンプルになります。
       const [timetableRes, profileRes] = await Promise.all([
         supabase.rpc('get_user_timetable', { p_user_id: user.id }),
         supabase.from("profiles").select(`
@@ -198,10 +184,8 @@ export default function MyPage() {
         const profileData = profileRes.data as any;
         
         let courseNameValue = null;
-        
         if (profileData && profileData.classes) {
           const cls = Array.isArray(profileData.classes) ? profileData.classes[0] : profileData.classes;
-          
           if (cls && cls.courses) {
             const crs = Array.isArray(cls.courses) ? cls.courses[0] : cls.courses;
             courseNameValue = crs?.name;
@@ -232,6 +216,7 @@ export default function MyPage() {
               period: subject.period,
               classroom: subject.classroom,
               categoryCode: subject.category_code, 
+              attendanceId: subject.attendance_id, // ★ RPCから取得した attendance_id を格納
             });
           }
           return acc;
@@ -262,13 +247,22 @@ export default function MyPage() {
 
       const startTime = new Date(now);
       startTime.setHours(timeInfo.start.h, timeInfo.start.m, 0, 0);
+      
       const openTime = new Date(startTime.getTime() - 5 * 60 * 1000); // 5分前
+      const closeTime = new Date(startTime.getTime() + 5 * 60 * 1000); // 5分後
 
-      if (now >= openTime && now < startTime && !openedSubjects.includes(subject.id)) {
-        console.log(`${subject.name} のLMSページを開きます...`);
+      // 開始5分前 〜 5分後 の間に開いた場合
+      if (now >= openTime && now <= closeTime && !openedSubjects.includes(subject.id)) {
+        console.log(`${subject.name} のLMS出欠ページを開きます...`);
         const dbId = subject.id.split('-')[0];
-        const url = `https://lms-tokyo.iput.ac.jp/course/view.php?id=${dbId}`;
+        
+        // attendance_id があれば優先、なければ id を使用
+        const targetId = subject.attendanceId ? subject.attendanceId : dbId;
+        
+        // ★ ここをご指定の出欠ページ（attendance/view.php）のURLに変更しました！
+        const url = `https://lms-tokyo.iput.ac.jp/mod/attendance/view.php?id=${targetId}`;
         window.open(url, '_blank');
+        
         setOpenedSubjects(prev => [...prev, subject.id]);
       }
     });
@@ -336,7 +330,7 @@ export default function MyPage() {
           />
         );
       case 'assignments':
-        return <Assignments subject={uniqueSubjects} />;
+        return <Assignments subject={uniqueSubjects as any} />;
       case 'study-room':
         return <StudyRoom />;
       case 'feedback':
